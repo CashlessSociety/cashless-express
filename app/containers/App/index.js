@@ -18,6 +18,7 @@ import Header from 'components/Header';
 import Footer from 'components/Footer';
 
 import GlobalStyle from '../../global-styles';
+import * as cashless from './cashless';
 
 const AppWrapper = styled.div`
   max-width: calc(768px + 16px * 2);
@@ -28,6 +29,16 @@ const AppWrapper = styled.div`
   flex-direction: column;
 `;
 
+var bufferToHex = (buffer) => {
+    let result = [...new Uint8Array (buffer)]
+        .map (b => b.toString (16).padStart (2, "0"))
+        .join ("");
+    return "0x"+result
+
+}
+
+var v = bufferToHex(cashless.hashString('abc'));
+
 export default function App() {
   return (
     <AppWrapper>
@@ -37,7 +48,8 @@ export default function App() {
       >
         <meta name="description" content="A React.js Boilerplate application" />
       </Helmet>
-      <Header />
+      <Header/>
+      <p>cashless proof: {v}</p>
       <Switch>
         <Route exact path="/" component={HomePage} />
         <Route path="/features" component={FeaturePage} />
