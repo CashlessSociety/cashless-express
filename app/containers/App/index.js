@@ -12,7 +12,7 @@ import styled from 'styled-components';
 import { Switch, Route } from 'react-router-dom';
 
 import HomePage from 'containers/HomePage/Loadable';
-import FeaturePage from 'containers/FeaturePage/Loadable';
+//import FeaturePage from 'containers/FeaturePage/Loadable';
 import NotFoundPage from 'containers/NotFoundPage/Loadable';
 import Header from 'components/Header';
 import Footer from 'components/Footer';
@@ -29,16 +29,6 @@ const AppWrapper = styled.div`
   flex-direction: column;
 `;
 
-var bufferToHex = (buffer) => {
-    let result = [...new Uint8Array (buffer)]
-        .map (b => b.toString (16).padStart (2, "0"))
-        .join ("");
-    return "0x"+result
-
-}
-
-var v = bufferToHex(cashless.hashString('abc'));
-
 export default function App() {
   return (
     <AppWrapper>
@@ -48,11 +38,11 @@ export default function App() {
       >
         <meta name="description" content="A React.js Boilerplate application" />
       </Helmet>
-      <Header/>
-      <p>cashless proof: {v}</p>
+      <Header />
       <Switch>
         <Route exact path="/" component={HomePage} />
-        <Route path="/features" component={FeaturePage} />
+        <Route path="/signup" component={HomePage} />
+        <Route path="/login" component={HomePage} />
         <Route path="" component={NotFoundPage} />
       </Switch>
       <Footer />

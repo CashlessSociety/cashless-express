@@ -88,7 +88,7 @@ export function HomePage({
               <Input
                 id="username"
                 type="text"
-                placeholder="mxstbr"
+                placeholder="something"
                 value={username}
                 onChange={onChangeUsername}
               />

@@ -8,6 +8,14 @@ import { reposLoaded, repoLoadingError } from 'containers/App/actions';
 
 import request from 'utils/request';
 import { makeSelectUsername } from 'containers/HomePage/selectors';
+import * as cashless from 'containers/App/cashless';
+
+var bufferToHex = buffer => {
+    let result = [...new Uint8Array(buffer)]
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    return '0x' + result;
+  };
 
 /**
  * Github repos request/response handler
@@ -15,12 +23,10 @@ import { makeSelectUsername } from 'containers/HomePage/selectors';
 export function* getRepos() {
   // Select username from store
   const username = yield select(makeSelectUsername());
-  const requestURL = `https://api.github.com/users/${username}/repos?type=all&sort=updated`;
+  const h = bufferToHex(cashless.hashString(username));
 
   try {
-    // Call our request helper (see 'utils/request')
-    const repos = yield call(request, requestURL);
-    yield put(reposLoaded(repos, username));
+    yield put(reposLoaded([{hash: h, hashAlg:"SHA-256"}], username));
   } catch (err) {
     yield put(repoLoadingError(err));
   }
