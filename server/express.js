@@ -24,6 +24,7 @@ const cookieEncrypter = require("cookie-encrypter");
 const fs = require("fs");
 const ssbKeys = require("ssb-keys");
 const { sentry } = require("./lib/errors");
+var cors = require('cors');
 
 const mode = process.env.MODE;
 
@@ -58,6 +59,7 @@ const cookieSecret =
 
 app.use(cookieParser(cookieSecret));
 app.use(cookieEncrypter(cookieSecret));
+app.use(cors());
 
 app.use(async (req, res, next) => {
   if (!ssb.client()) {
@@ -212,6 +214,26 @@ app.use((req, res, next) => {
 
   next();
 });
+
+app.post("/upload", (req, res) => {
+    // accessing the file
+    const myFile = req.files.file;
+    console.log('file retreived:', myFile.name);
+
+    //  mv() method places the file inside public directory
+    myFile.mv(`/Users/earth/Desktop/WORK/${req.body.filename}`, function (err) {
+        if (err) {
+            console.log(err)
+            return res.json({ msg: "Error occured" });
+        }
+        // returing the response with file path and name
+        return res.json({name: myFile.name, status: "ok"});
+    });
+});
+
+app.post("/remove", (req, res) => {
+    
+})
 
 // In production we need to pass these values in instead of relying on webpack
 setup(app, {

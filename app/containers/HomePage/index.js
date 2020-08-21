@@ -4,7 +4,7 @@
  * This is the first thing users see of our App, at the '/' route
  */
 
-import React, { useEffect, memo } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import PropTypes from 'prop-types';
 import { Helmet } from 'react-helmet';
 import { FormattedMessage } from 'react-intl';
@@ -41,10 +41,19 @@ export function HomePage({
   error,
   repos,
   onSubmitForm,
-  onChangeUsername,
 }) {
   useInjectReducer({ key, reducer });
   useInjectSaga({ key, saga });
+
+  const [testString, setTestString] = useState('Mary');
+
+  useEffect(() => {
+    document.title = testString;
+  }, [testString]);
+
+  const handleTestString = evt => {
+    setTestString(evt.target.value);
+  }
 
   useEffect(() => {
     // When initial state username is not null, submit the form to load repos
@@ -89,8 +98,8 @@ export function HomePage({
                 id="username"
                 type="text"
                 placeholder="something"
-                value={username}
-                onChange={onChangeUsername}
+                value={testString}
+                onChange={handleTestString}
               />
             </label>
           </Form>
@@ -119,10 +128,9 @@ const mapStateToProps = createStructuredSelector({
 
 export function mapDispatchToProps(dispatch) {
   return {
-    onChangeUsername: evt => dispatch(changeUsername(evt.target.value)),
-    onSubmitForm: evt => {
-      if (evt !== undefined && evt.preventDefault) evt.preventDefault();
-      dispatch(loadRepos());
+    //onChangeUsername: evt => dispatch(changeUsername(evt.target.value)),
+    onChangeUsername: evt => setTestString(evt.target.value),
+    onSubmitForm: evt => 
     },
   };
 }

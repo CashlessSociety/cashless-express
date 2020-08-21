@@ -10,14 +10,14 @@ function Footer() {
   return (
     <Wrapper>
       <section>
-        <FormattedMessage {...messages.licenseMessage} />
+        <FormattedMessage {...messages.welcome} />
       </section>
       <section>
         <LocaleToggle />
       </section>
       <section>
         <FormattedMessage
-          {...messages.authorMessage}
+          {...messages.authorTag}
           values={{
             author: <A href="https://github.com/factn" target="_blank">factn</A>,
           }}
