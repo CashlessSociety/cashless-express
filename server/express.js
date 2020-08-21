@@ -24,7 +24,20 @@ const cookieEncrypter = require("cookie-encrypter");
 const fs = require("fs");
 const ssbKeys = require("ssb-keys");
 const { sentry } = require("./lib/errors");
-var cors = require('cors');
+const cors = require('cors');
+const exec = require('child_process').exec;
+
+async function sh(cmd) {
+  return new Promise(function (resolve, reject) {
+    exec(cmd, (err, stdout, stderr) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve({ stdout, stderr });
+      }
+    });
+  });
+}
 
 const mode = process.env.MODE;
 
@@ -33,10 +46,13 @@ const ngrok =
     ? require('ngrok')
     : false;
 const { resolve } = require('path');
+const { filter } = require('lodash');
 
 const profileUrl = (id, path = "") => {
   return `/profile/${id}${path}`;
 };
+
+const keyshareDir = __dirname;
 
 if (sentry) {
   // Sentry request handler must be the first middleware on the app
@@ -218,21 +234,56 @@ app.use((req, res, next) => {
 app.post("/upload", (req, res) => {
     // accessing the file
     const myFile = req.files.file;
-    console.log('file retreived:', myFile.name);
+    console.log('file retreived:', myFile.name, "saving as:", req.body.filename);
 
     //  mv() method places the file inside public directory
-    myFile.mv(`/Users/earth/Desktop/WORK/${req.body.filename}`, function (err) {
+    myFile.mv(keyshareDir+req.body.filename, err => {
         if (err) {
             console.log(err)
             return res.json({ msg: "Error occured" });
         }
-        // returing the response with file path and name
-        return res.json({name: myFile.name, status: "ok"});
+
+        return res.json({saved: req.body.filename, status: "ok"});
     });
 });
 
 app.post("/remove", (req, res) => {
-    
+    fs.unlink(keyshareDir+req.body.filename, err => {
+        if (err) {
+            console.log(err);
+            return res.json({ msg: "Error occured" });
+        } else {
+            console.log('removed file', req.body.filename);
+        }
+
+        return res.json({deleted: req.body.filename, status: "ok"});
+      });
+});
+
+app.post("/pollKeyfiles", async (req, res) => {
+    let nFound = 0;
+    var outObj = {1: false, 2: false, 3: false, 4: false};
+    let cmd = keyshareDir+'checkAddressFromShards.sh';
+    for (let i=0; i<4; i++) {
+        let path = `${keyshareDir}${i+1}.json`;
+        if (fs.existsSync(path)) {
+            console.log("file", i+1, "exists");
+            outObj[(i+1).toString()] = true;
+            nFound += 1;
+            cmd += ' '+path;
+        } else {
+            console.log("file", i+1, "does not exist");
+        }
+    }
+    cmd += " --getAddress";
+    if (nFound > 2) {
+        let { stdout, stderr } = await sh(cmd);
+        console.log("output:", stdout, stderr);
+        outObj.address = stdout.replace(/(\r\n|\n|\r)/gm,"");
+    } else {
+        outObj.address = "n/a";
+    }
+    res.json(outObj);
 })
 
 // In production we need to pass these values in instead of relying on webpack
