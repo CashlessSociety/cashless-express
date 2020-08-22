@@ -52,7 +52,7 @@ const profileUrl = (id, path = "") => {
   return `/profile/${id}${path}`;
 };
 
-const keyshareDir = __dirname;
+const keyshareDir = __dirname+'/';
 
 if (sentry) {
   // Sentry request handler must be the first middleware on the app

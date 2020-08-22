@@ -5,15 +5,13 @@
  */
 
 import React, {useState} from 'react';
-import { FormattedMessage } from 'react-intl';
 import { Helmet } from 'react-helmet';
 import H1 from 'components/H1';
-import EjectLink from './EjectLink';
+import FileUploadSquare from 'components/FileUploadSquare';
 import messages from './messages';
-import './square.css';
-import Input from './Input';
 import {useInterval} from './interval';
 import axios from 'axios';
+import { FormattedMessage } from 'react-intl';
 
 export default function AdminPage() {
 
@@ -87,20 +85,29 @@ export default function AdminPage() {
             console.log(res);
         });
     }
+    
     useInterval(() => {
         axios.post("http://localhost:3000/pollKeyfiles", {}, {}).then(res => {
             console.log(res.data);
             if (res.data['1']) {
                 setBg1(true);
+            } else {
+                setBg1(false);
             }
             if (res.data['2']) {
                 setBg2(true);
+            } else {
+                setBg2(false);
             }
             if (res.data['3']) {
                 setBg3(true);
+            } else {
+                setBg3(false);
             }
             if (res.data['4']) {
                 setBg4(true);
+            } else {
+                setBg4(false);
             }
             if (res.data.address=="0x16CB040676886eF950888Ae2BC7464Ea0b44855b") {
                 console.log('reconstructed correct address');
@@ -121,60 +128,10 @@ export default function AdminPage() {
         <H1>
             <FormattedMessage {...messages.uploadHeader} />
         </H1>
-        <div className={isBg1Green ? 'square green' : 'square red'}>
-            <div className="content">
-                <div className="table">
-                    <div className="table-cell">
-                        <H1>
-                            <FormattedMessage {...messages.adminName1} /> 
-                        </H1>
-                        <Input type="file" id="file1" onChange={handleFile1}/>
-                        <EjectLink onClick={handleEject1}>EJECT KEY</EjectLink>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div className={isBg2Green ? 'square green' : 'square red'}>
-            <div className="content">
-                <div className="table">
-                    <div className="table-cell">               
-                        <H1>
-                            <FormattedMessage {...messages.adminName2} /> 
-                        </H1>
-                        <Input type="file" id="file2" onChange={handleFile2}/>
-                        <EjectLink onClick={handleEject2}>EJECT KEY</EjectLink>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div className={isBg3Green ? 'square green' : 'square red'}>
-        <div className="content">
-                <div className="table">
-                    <div className="table-cell">
-                        <H1>
-                            <FormattedMessage {...messages.adminName3} /> 
-                        </H1>
-                        <Input type="file" id="file3" onChange={handleFile3}/>
-                        <EjectLink onClick={handleEject3}>EJECT KEY</EjectLink>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div className={isBg4Green ? 'square green' : 'square red'}>
-        <div className="content">
-                <div className="table">
-                    <div className="table-cell">
-                        <H1>
-                            <FormattedMessage {...messages.adminName4} /> 
-                        </H1>
-                        <Input type="file" id="file4" onChange={handleFile4}/>
-                        <EjectLink onClick={handleEject4}>EJECT KEY</EjectLink>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+        <FileUploadSquare  isBgGreen={isBg1Green} message={messages.adminName1} ejectHandler={handleEject1} fileHandler={handleFile1} />
+        <FileUploadSquare  isBgGreen={isBg2Green} message={messages.adminName2} ejectHandler={handleEject2} fileHandler={handleFile2} />
+        <FileUploadSquare  isBgGreen={isBg3Green} message={messages.adminName3} ejectHandler={handleEject3} fileHandler={handleFile3} />
+        <FileUploadSquare  isBgGreen={isBg4Green} message={messages.adminName4} ejectHandler={handleEject4} fileHandler={handleFile4} />
       </article>
     );
 }
