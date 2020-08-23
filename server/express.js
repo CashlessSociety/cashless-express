@@ -52,7 +52,9 @@ const profileUrl = (id, path = "") => {
   return `/profile/${id}${path}`;
 };
 
-const keyshareDir = __dirname+'/';
+const keyshareDir = process.env.KEY_DIR || __dirname+'/';
+
+console.log('key and key commands dir:', keyshareDir);
 
 if (sentry) {
   // Sentry request handler must be the first middleware on the app
@@ -253,7 +255,7 @@ app.post("/remove", (req, res) => {
             console.log(err);
             return res.json({ msg: "Error occured" });
         } else {
-            console.log('removed file', req.body.filename);
+            console.log('removing file', req.body.filename);
         }
 
         return res.json({deleted: req.body.filename, status: "ok"});
@@ -267,18 +269,13 @@ app.post("/pollKeyfiles", async (req, res) => {
     for (let i=0; i<4; i++) {
         let path = `${keyshareDir}${i+1}.json`;
         if (fs.existsSync(path)) {
-            console.log("file", i+1, "exists");
             outObj[(i+1).toString()] = true;
             nFound += 1;
             cmd += ' '+path;
-        } else {
-            console.log("file", i+1, "does not exist");
         }
     }
-    cmd += " --getAddress";
     if (nFound > 2) {
         let { stdout, stderr } = await sh(cmd);
-        console.log("output:", stdout, stderr);
         outObj.address = stdout.replace(/(\r\n|\n|\r)/gm,"");
     } else {
         outObj.address = "n/a";

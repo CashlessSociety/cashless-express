@@ -19,7 +19,7 @@ import { makeSelectLocale } from '../LanguageProvider/selectors';
 export function LocaleToggle(props) {
   return (
     <Wrapper>
-      <Toggle
+      language: <Toggle
         value={props.locale}
         values={appLocales}
         messages={messages}

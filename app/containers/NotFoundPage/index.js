@@ -9,13 +9,14 @@ import { FormattedMessage } from 'react-intl';
 
 import H1 from 'components/H1';
 import messages from './messages';
+import './notfound.css';
 
 export default function NotFound() {
   return (
-    <article>
-      <H1>
-        <FormattedMessage {...messages.header} />
-      </H1>
-    </article>
+      <div className='nf'>
+        <H1>
+            <FormattedMessage {...messages.header} />
+        </H1>
+      </div>
   );
 }

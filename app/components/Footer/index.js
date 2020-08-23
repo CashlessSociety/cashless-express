@@ -3,27 +3,21 @@ import { FormattedMessage } from 'react-intl';
 
 import A from 'components/A';
 import LocaleToggle from 'containers/LocaleToggle';
-import Wrapper from './Wrapper';
+import './footer.css';
 import messages from './messages';
 
 function Footer() {
   return (
-    <Wrapper>
-      <section>
-        <FormattedMessage {...messages.welcome} />
-      </section>
-      <section>
-        <LocaleToggle />
-      </section>
-      <section>
-        <FormattedMessage
-          {...messages.authorTag}
-          values={{
+    <div className='footerWrapper'>
+        <div className='footerItem'>
+        <FormattedMessage {...messages.authorTag} values={{
             author: <A href="https://github.com/factn" target="_blank">factn</A>,
-          }}
-        />
-      </section>
-    </Wrapper>
+          }}/>
+        </div>
+        <div className='footerItem'>
+            <LocaleToggle />  
+        </div>
+    </div>
   );
 }
 

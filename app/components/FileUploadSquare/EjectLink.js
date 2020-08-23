@@ -20,6 +20,6 @@ export default styled(Link)`
 
   &:hover {
     background: #fff;
-    color: #2835e9;
+    color: #000;
   }
 `;

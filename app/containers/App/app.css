@@ -1,0 +1,17 @@
+@import url(http://fonts.googleapis.com/css?family=Lato:400,900); 
+
+.top_lvl {
+    margin: 0 auto;
+    position: absolute;
+    min-height: 100%;
+    padding: 0 10px;
+    font-size: 12px;
+    font-family: 'Lato';
+    min-width: 50%;
+}
+
+@media only screen and (max-height: 730px) {
+    .top_lvl {
+        font-size: 10px !important;
+    } 
+}

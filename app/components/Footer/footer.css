@@ -1,0 +1,14 @@
+.footerWrapper {
+    position: absolute;
+    bottom: 0;
+    border-top: 1px solid #666;
+    max-width: 95%;
+    min-width: 80%;
+    padding-bottom: 1em;
+}
+
+.footerItem {
+    display: inline-block;
+    width: 45%;
+    font-size: 1.5em;
+}
