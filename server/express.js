@@ -8,6 +8,7 @@ const port = require('./port');
 const setup = require('./middlewares/frontendMiddleware');
 const isDev = process.env.NODE_ENV !== 'production';
 const ssb = require("./lib/ssb-client");
+var https = require('https')
 const app = express();
 const bodyParser = require("body-parser");
 const {
@@ -38,8 +39,6 @@ async function sh(cmd) {
     });
   });
 }
-
-const mode = process.env.MODE;
 
 const ngrok =
   (isDev && process.env.ENABLE_TUNNEL) || argv.tunnel
@@ -315,24 +314,50 @@ app.use((error, req, res, _next) => {
   }
 });
 
-// Start your app.
-const expressServer = app.listen(port, host, async err => {
-  if (err) {
-    return logger.error(err.message);
-  }
-
-  // Connect to ngrok in dev mode
-  if (ngrok) {
-    let url;
-    try {
-      url = await ngrok.connect(port);
-    } catch (e) {
-      return logger.error(e);
-    }
-    logger.appStarted(port, prettyHost, url);
-  } else {
-    logger.appStarted(port, prettyHost);
-  }
-});
+var expressServer;
+if (process.env.HTTPS) {
+    console.log("PROTOCOL: HTTPS (secure)");
+    expressServer = https.createServer({
+        key: fs.readFileSync(process.env.PROD_KEYFILE||'serverTest.key'),
+        cert: fs.readFileSync(process.env.PROD_CERT||'serverTest.cert')
+      }, app).listen(port, host, async err => {
+      if (err) {
+        return logger.error(err.message);
+      }
+    
+      // Connect to ngrok in dev mode
+      if (ngrok) {
+        let url;
+        try {
+          url = await ngrok.connect(port);
+        } catch (e) {
+          return logger.error(e);
+        }
+        logger.appStarted(port, prettyHost, url);
+      } else {
+        logger.appStarted(port, prettyHost);
+      }
+    });
+} else {
+    console.log("PROTOCOL: HTTP (insecure)");
+    expressServer = app.listen(port, host, async err => {
+        if (err) {
+          return logger.error(err.message);
+        }
+      
+        // Connect to ngrok in dev mode
+        if (ngrok) {
+          let url;
+          try {
+            url = await ngrok.connect(port);
+          } catch (e) {
+            return logger.error(e);
+          }
+          logger.appStarted(port, prettyHost, url);
+        } else {
+          logger.appStarted(port, prettyHost);
+        }
+    });
+}
 
 module.exports = expressServer;
