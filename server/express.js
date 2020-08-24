@@ -2,58 +2,41 @@
 
 const express = require('express');
 const logger = require('./logger');
-
 const argv = require('./argv');
 const port = require('./port');
 const setup = require('./middlewares/frontendMiddleware');
 const isDev = process.env.NODE_ENV !== 'production';
 const ssb = require("./lib/ssb-client");
-var https = require('https')
+const https = require('https');
 const app = express();
 const bodyParser = require("body-parser");
-const {
-  reconstructKeys,
-  uploadPicture,
-  isPhone,
-  ssbFolder,
-} = require("./lib/utils");
 const queries = require("./lib/queries");
 const cookieParser = require("cookie-parser");
 const fileUpload = require("express-fileupload");
-const metrics = require("./lib/metrics");
 const cookieEncrypter = require("cookie-encrypter");
 const fs = require("fs");
-const ssbKeys = require("ssb-keys");
+//const ssbKeys = require("ssb-keys");
 const { sentry } = require("./lib/errors");
 const cors = require('cors');
 const exec = require('child_process').exec;
 
-async function sh(cmd) {
-  return new Promise(function (resolve, reject) {
-    exec(cmd, (err, stdout, stderr) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({ stdout, stderr });
-      }
-    });
-  });
-}
-
-const ngrok =
-  (isDev && process.env.ENABLE_TUNNEL) || argv.tunnel
-    ? require('ngrok')
-    : false;
+const ngrok = (isDev && process.env.ENABLE_TUNNEL) || argv.tunnel ? require('ngrok') : false;
 const { resolve } = require('path');
-const { filter } = require('lodash');
 
-const profileUrl = (id, path = "") => {
-  return `/profile/${id}${path}`;
-};
-
-const keyshareDir = process.env.KEY_DIR || __dirname+'/';
-
+const keyshareDir = process.env.KEYSHARE_DIR || __dirname+'/';
 console.log('key and key commands dir:', keyshareDir);
+
+const sh = cmd => {
+    return new Promise(function (resolve, reject) {
+      exec(cmd, (err, stdout, stderr) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ stdout, stderr });
+        }
+      });
+    });
+}
 
 if (sentry) {
   // Sentry request handler must be the first middleware on the app
@@ -62,14 +45,6 @@ if (sentry) {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(fileUpload());
-
-const cookieOptions = {
-  httpOnly: true,
-  signed: true,
-  expires: new Date(253402300000000), // Friday, 31 Dec 9999 23:59:59 GMT, nice date from stackoverflow
-  sameSite: "Lax",
-};
-
 
 const cookieSecret =
   process.env.COOKIES_SECRET || "set_cookie_secret_you_are_unsafe"; // has to be 32-bits
@@ -117,6 +92,158 @@ app.use("/pub_invite", async (_req, res) => {
 
   res.json({ invite });
 });
+
+app.post("/upload", (req, res) => {
+    // accessing the file
+    const myFile = req.files.file;
+    console.log('file retreived:', myFile.name, "saving as:", req.body.filename);
+
+    //  mv() method places the file inside public directory
+    myFile.mv(keyshareDir+req.body.filename, err => {
+        if (err) {
+            console.log(err)
+            return res.json({ msg: "Error occured" });
+        }
+
+        return res.json({saved: req.body.filename, status: "ok"});
+    });
+});
+
+app.post("/remove", (req, res) => {
+    fs.unlink(keyshareDir+req.body.filename, err => {
+        if (err) {
+            console.log(err);
+            return res.json({ msg: "Error occured" });
+        } else {
+            console.log('removing file', req.body.filename);
+        }
+
+        return res.json({deleted: req.body.filename, status: "ok"});
+      });
+});
+
+app.post("/pollKeyfiles", async (_req, res) => {
+    let nFound = 0;
+    var outObj = {'1': false, '2': false, '3': false, '4': false};
+    let cmd = keyshareDir+'checkAddressFromShards.sh';
+    for (let i=0; i<4; i++) {
+        let path = `${keyshareDir}${i+1}.json`;
+        if (fs.existsSync(path)) {
+            outObj[(i+1).toString()] = true;
+            nFound += 1;
+            cmd += ' '+path;
+        }
+    }
+    if (nFound > 2) {
+        try {
+            let { stdout } = await sh(cmd);
+            outObj.address = stdout.replace(/(\r\n|\n|\r)/gm,"");
+        } catch(_e) {
+            outObj.address = "n/a";
+        }
+    } else {
+        outObj.address = "n/a";
+    }
+    res.json(outObj);
+});
+
+// In production we need to pass these values in instead of relying on webpack
+setup(app, {
+  outputPath: resolve(process.cwd(), 'build'),
+  publicPath: '/',
+});
+
+// get the intended host and port number, use localhost and port 3000 if not provided
+const customHost = argv.host || process.env.HOST;
+const host = customHost || null; // Let http.Server use its default IPv6/4 host
+const prettyHost = customHost || 'localhost';
+
+// use the gzipped bundle
+app.get('*.js', (req, res, next) => {
+  req.url = req.url + '.gz'; // eslint-disable-line
+  res.set('Content-Encoding', 'gzip');
+  next();
+});
+
+if (sentry) {
+  // The error handler must be before any other error middleware and after all controllers
+  app.use(sentry.Handlers.errorHandler());
+}
+
+app.use((error, _req, res, _next) => {
+  res.statusCode = 500;
+  res.render("desktop/error", { error });
+});
+
+var expressServer;
+if (process.env.HTTPS) {
+    console.log("PROTOCOL: HTTPS (secure)");
+    expressServer = https.createServer({
+        key: fs.readFileSync(process.env.PROD_KEYFILE||'serverTest.key'),
+        cert: fs.readFileSync(process.env.PROD_CERT||'serverTest.cert')
+      }, app).listen(port, host, async err => {
+      if (err) {
+        return logger.error(err.message);
+      }
+    
+      // Connect to ngrok in dev mode
+      if (ngrok) {
+        let url;
+        try {
+          url = await ngrok.connect(port);
+        } catch (e) {
+          return logger.error(e);
+        }
+        logger.appStarted(port, prettyHost, url);
+      } else {
+        logger.appStarted(port, prettyHost);
+      }
+    });
+} else {
+    console.log("PROTOCOL: HTTP (insecure)");
+    expressServer = app.listen(port, host, async err => {
+        if (err) {
+          return logger.error(err.message);
+        }
+      
+        // Connect to ngrok in dev mode
+        if (ngrok) {
+          let url;
+          try {
+            url = await ngrok.connect(port);
+          } catch (e) {
+            return logger.error(e);
+          }
+          logger.appStarted(port, prettyHost, url);
+        } else {
+          logger.appStarted(port, prettyHost);
+        }
+    });
+}
+
+module.exports = expressServer;
+
+/*
+const {
+  reconstructKeys,
+  uploadPicture,
+  isPhone,
+  ssbFolder,
+} = require("./lib/utils");
+
+const { filter } = require('lodash');
+const metrics = require("./lib/metrics");
+
+const cookieOptions = {
+  httpOnly: true,
+  signed: true,
+  expires: new Date(253402300000000), // Friday, 31 Dec 9999 23:59:59 GMT, nice date from stackoverflow
+  sameSite: "Lax",
+};
+
+const profileUrl = (id, path = "") => {
+  return `/profile/${id}${path}`;
+};
 
 app.use((req, res, next) => {
   res.locals.profileUrl = profileUrl;
@@ -230,134 +357,4 @@ app.use((req, res, next) => {
   };
 
   next();
-});
-
-app.post("/upload", (req, res) => {
-    // accessing the file
-    const myFile = req.files.file;
-    console.log('file retreived:', myFile.name, "saving as:", req.body.filename);
-
-    //  mv() method places the file inside public directory
-    myFile.mv(keyshareDir+req.body.filename, err => {
-        if (err) {
-            console.log(err)
-            return res.json({ msg: "Error occured" });
-        }
-
-        return res.json({saved: req.body.filename, status: "ok"});
-    });
-});
-
-app.post("/remove", (req, res) => {
-    fs.unlink(keyshareDir+req.body.filename, err => {
-        if (err) {
-            console.log(err);
-            return res.json({ msg: "Error occured" });
-        } else {
-            console.log('removing file', req.body.filename);
-        }
-
-        return res.json({deleted: req.body.filename, status: "ok"});
-      });
-});
-
-app.post("/pollKeyfiles", async (req, res) => {
-    let nFound = 0;
-    var outObj = {1: false, 2: false, 3: false, 4: false};
-    let cmd = keyshareDir+'checkAddressFromShards.sh';
-    for (let i=0; i<4; i++) {
-        let path = `${keyshareDir}${i+1}.json`;
-        if (fs.existsSync(path)) {
-            outObj[(i+1).toString()] = true;
-            nFound += 1;
-            cmd += ' '+path;
-        }
-    }
-    if (nFound > 2) {
-        let { stdout, stderr } = await sh(cmd);
-        outObj.address = stdout.replace(/(\r\n|\n|\r)/gm,"");
-    } else {
-        outObj.address = "n/a";
-    }
-    res.json(outObj);
-})
-
-// In production we need to pass these values in instead of relying on webpack
-setup(app, {
-  outputPath: resolve(process.cwd(), 'build'),
-  publicPath: '/',
-});
-
-// get the intended host and port number, use localhost and port 3000 if not provided
-const customHost = argv.host || process.env.HOST;
-const host = customHost || null; // Let http.Server use its default IPv6/4 host
-const prettyHost = customHost || 'localhost';
-
-// use the gzipped bundle
-app.get('*.js', (req, res, next) => {
-  req.url = req.url + '.gz'; // eslint-disable-line
-  res.set('Content-Encoding', 'gzip');
-  next();
-});
-
-if (sentry) {
-  // The error handler must be before any other error middleware and after all controllers
-  app.use(sentry.Handlers.errorHandler());
-}
-
-app.use((error, req, res, _next) => {
-  res.statusCode = 500;
-  if (isPhone(req)) {
-    res.render("mobile/error", { error, layout: "mobile/_layout" });
-  } else {
-    res.render("desktop/error", { error });
-  }
-});
-
-var expressServer;
-if (process.env.HTTPS) {
-    console.log("PROTOCOL: HTTPS (secure)");
-    expressServer = https.createServer({
-        key: fs.readFileSync(process.env.PROD_KEYFILE||'serverTest.key'),
-        cert: fs.readFileSync(process.env.PROD_CERT||'serverTest.cert')
-      }, app).listen(port, host, async err => {
-      if (err) {
-        return logger.error(err.message);
-      }
-    
-      // Connect to ngrok in dev mode
-      if (ngrok) {
-        let url;
-        try {
-          url = await ngrok.connect(port);
-        } catch (e) {
-          return logger.error(e);
-        }
-        logger.appStarted(port, prettyHost, url);
-      } else {
-        logger.appStarted(port, prettyHost);
-      }
-    });
-} else {
-    console.log("PROTOCOL: HTTP (insecure)");
-    expressServer = app.listen(port, host, async err => {
-        if (err) {
-          return logger.error(err.message);
-        }
-      
-        // Connect to ngrok in dev mode
-        if (ngrok) {
-          let url;
-          try {
-            url = await ngrok.connect(port);
-          } catch (e) {
-            return logger.error(e);
-          }
-          logger.appStarted(port, prettyHost, url);
-        } else {
-          logger.appStarted(port, prettyHost);
-        }
-    });
-}
-
-module.exports = expressServer;
+});*/

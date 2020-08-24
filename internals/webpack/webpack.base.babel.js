@@ -17,6 +17,7 @@ module.exports = options => ({
     options.output,
   ), // Merge with env dependent settings
   optimization: options.optimization,
+
   module: {
     rules: [
       {
@@ -121,6 +122,9 @@ module.exports = options => ({
     mainFields: ['browser', 'jsnext:main', 'main'],
   },
   devtool: options.devtool,
+  node: {
+    fs: 'empty'
+  },
   target: 'web', // Make web variables accessible to webpack, e.g. window
   performance: options.performance || {},
 });

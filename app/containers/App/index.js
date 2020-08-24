@@ -13,6 +13,7 @@ import { Switch, Route } from 'react-router-dom';
 
 import AdminPage from 'containers/AdminPage/Loadable';
 import NotFoundPage from 'containers/NotFoundPage/Loadable';
+import HomePage from 'containers/HomePage/Loadable';
 import Header from 'components/Header';
 import Footer from 'components/Footer'; 
 import './app.css';
@@ -32,7 +33,7 @@ export default function App() {
       </Helmet>
       <Header />
       <Switch>
-        <Route exact path="/" component={NotFoundPage} />
+        <Route exact path="/" component={HomePage} />
         <Route exact path="/admin" component={AdminPage} />
         <Route path="" component={NotFoundPage} />
       </Switch>

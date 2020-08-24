@@ -1,0 +1,64 @@
+/*
+  https://developer.mozilla.org/en/docs/Web/CSS/box-shadow
+  box-shadow: [inset?] [top] [left] [blur] [size] [color];
+
+  Tips:
+    - We're setting all the blurs to 0 since we want a solid fill.
+    - Add the inset keyword so the box-shadow is on the inside of the element
+    - Animating the inset shadow on hover looks like the element is filling in from whatever side you specify ([top] and [left] accept negative values to become [bottom] and [right])
+    - Multiple shadows can be stacked
+    - If you're animating multiple shadows, be sure to keep the same number of shadows so the animation is smooth. Otherwise, you'll get something choppy.
+*/
+
+.joinDiv{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    -webkit-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+}
+
+.keyArea {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.hiddenFile {
+    display: none;
+}
+
+.raise:hover,
+.raise:focus {
+  box-shadow: 0 0.5em 0.5em -0.4em var(--hover);
+  transform: translateY(-0.25em);
+}
+
+.up:hover,
+.up:focus {
+  box-shadow: inset 0 -3.25em 0 0 var(--hover);
+  color:blue;
+  border-color:blue;
+  background: none;
+}
+
+button {  
+  color: #fff;
+  transition: 0.25s;
+  
+  &:hover,
+  &:focus {
+    border-color: var(--hover);
+  }
+}
+
+button {
+  background-color:  rgb(111, 111, 206);
+  border: 0.2em solid;
+  border-color:  rgb(111, 111, 206);
+  font: inherit;
+  line-height: 5em;
+  border-radius: 0.5em;
+  margin: 0.5em;
+  padding: 1em 5em;
+}

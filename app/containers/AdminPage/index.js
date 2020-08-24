@@ -1,7 +1,7 @@
 /*
- * HomePage
+ * Admin Page
  *
- * This is the first thing users see of our App, at the '/' route
+ * 
  */
 
 import React, { useState } from 'react';
@@ -60,7 +60,7 @@ export default function AdminPage() {
     axios.post('http://127.0.0.1:3000/upload', data, {}).then(res => {
       console.log('upload:', res.statusText);
       setBgGreen(true);
-      setResetBgTime(now() + 1);
+      setResetBgTime(now() + 3);
     });
   };
 
@@ -69,7 +69,7 @@ export default function AdminPage() {
     data.append('filename', name + '.json');
     axios.post('http://127.0.0.1:3000/remove', data, {}).then(res => {
       console.log('remove:', res.statusText);
-      setResetBgTime(now() + 1);
+      setResetBgTime(now() + 3);
       inputRef.current.value = "";
     });
   };
@@ -110,7 +110,7 @@ export default function AdminPage() {
     } else {
       setKeyActive(false);
     }
-  }, 500);
+  }, 2000);
 
   return (
     <article>

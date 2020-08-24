@@ -22,6 +22,7 @@ module.exports = require('./webpack.base.babel')({
     filename: '[name].js',
     chunkFilename: '[name].chunk.js',
   },
+  
 
   optimization: {
     splitChunks: {
