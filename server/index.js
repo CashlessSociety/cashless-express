@@ -1,6 +1,7 @@
 require("./lib/errors");
 
 require("./lib/ssb");
+require("./apollo");
 
 let server;
 setTimeout(() => {
