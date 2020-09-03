@@ -3,68 +3,53 @@ const { gql } = require('apollo-server');
 const typeDefs = gql`
     type Identity {
         id: ID!
-        names: [ClaimedCommonName]
-        accounts: [ClaimedAccountHandle]
-        feeds: [ClaimedFeed]
+        names: [CommonName]
+        handles: [Handle]
+        feeds: [Feed]
+        reserves: [ReservesAccount]
         assets: [PromiseMessage]
         liabilites: [PromiseMessage]
         #reciprocities: [ReciprocityMessage]
         #settlements: [SettlementMessage]
-        reserves: [ClaimedReservesAccount]
         active: Boolean
     }
 
     interface Name {
-        type: NameType!
+        nameType: NameType!
+        identityClaim: IdentityClaim
     }
 
     type CommonName implements Name {
+        nameType: NameType!
         id: ID!
         name: String!
-        type: NameType!
+        identityClaim: IdentityClaim
     }
 
-    type AccountHandle implements Name {
+    type Handle implements Name {
+        nameType: NameType!
         handle: String!
-        accountType: AccountType!
-        type: NameType!
+        handleType: HandleType!
+        identityClaim: IdentityClaim
     }
 
     type Feed implements Name {
+        nameType: NameType!
         id: ID!
         publicKey: String!
         active: Boolean
         peers: [Feed]
         messages: [Message]
-        type: NameType!
+        identityClaim: IdentityClaim
     }
 
     type ReservesAccount implements Name {
+        nameType: NameType!
         address: String!
         reservesContractAddress: String!
         active: Boolean
         aliases: [ReservesAlias]
-        type: NameType!
-    }
-
-    type ClaimedCommonName {
-        claim: IdentityClaim!
-        commonName: CommonName
-    }
-
-    type ClaimedFeed {
-        claim: IdentityClaim!
-        feed: Feed
-    }
-
-    type ClaimedAccountHandle {
-        claim: IdentityClaim!
-        accountHandle: AccountHandle
-    }
-
-    type ClaimedReservesAccount {
-        claim: IdentityClaim!
-        reservesAccount: ReservesAccount
+        identityClaim: IdentityClaim
     }
 
     type IdentityClaim {
@@ -80,6 +65,7 @@ const typeDefs = gql`
     }
 
     interface Message {
+        msgType: MsgType!
         previous: String
         hash: HashFunc!
         author: Feed!
@@ -89,6 +75,7 @@ const typeDefs = gql`
     }
 
     type PromiseMessage implements Message {
+        msgType: MsgType!
         previous: String
         hash: HashFunc!
         author: Feed!
@@ -117,6 +104,7 @@ const typeDefs = gql`
     }
 
     type IdentityMessage implements Message {
+        msgType: MsgType!
         previous: String
         hash: HashFunc!
         author: Feed!
@@ -125,14 +113,6 @@ const typeDefs = gql`
         signature: String!
         identity: ID!
         name: Name
-    }
-
-    enum AccountType {
-        TWITTER
-        FACEBOOK
-        GMAIL
-        GITHUB
-        INSTAGRAM
     }
 
     enum NameType {
@@ -150,6 +130,18 @@ const typeDefs = gql`
     enum Denomination {
         USD
         ETH
+    }
+
+    enum HandleType {
+        TWITTER
+        FACEBOOK
+        GMAIL
+        GITHUB
+        INSTAGRAM
+    }
+
+    enum MsgType {
+        PROMISE
     }
 
     type Query {
