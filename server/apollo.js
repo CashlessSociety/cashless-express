@@ -5,12 +5,13 @@ const ssbFlumeAPI = require('./datasource');
 
 const dataSources = () => ({
     ssbFlumeAPI: new ssbFlumeAPI(),
-  });
+});
 
 const server = new ApolloServer({
     typeDefs,
     resolvers,
     dataSources,
+    inrospection: true,
   });
   
   server.listen(process.env.APOLLO_PORT || 4000).then(({ url }) => {

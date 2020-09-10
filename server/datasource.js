@@ -1,7 +1,6 @@
 const { DataSource } = require('apollo-datasource');
 const ssb = require("./lib/ssb-client");
 const pull = require("pull-stream");
-const { output } = require('../internals/webpack/webpack.dev.babel');
 
 const streamPull = (...streams) =>
   new Promise((resolve, reject) => {
@@ -26,8 +25,8 @@ class ssbFlumeAPI extends DataSource {
   }
 
   promisesReducer(promises, feedId) {
-      output = []
-      for (i=0; i<promises.length; i++) {
+      let output = []
+      for (let i=0; i<promises.length; i++) {
         output.push({
             msgType: promises[i].value.content.contentHeader.msgType,
             id: promises[i].key,
@@ -41,6 +40,8 @@ class ssbFlumeAPI extends DataSource {
             memo: promises[i].value.content.promise.memo,
             tags: promises[i].value.content.promise.tags,
             author: {id: feedId},
+            issueDate: promises[i].value.content.promise.issueDate,
+            vestDate: promises[i].value.content.promise.vestDate,
             from: {
                address: promises[i].value.content.from.address,
                aliases:  promises[i].value.content.from.aliases,
@@ -74,15 +75,17 @@ class ssbFlumeAPI extends DataSource {
       }
     }];
     try {
-        results = await streamPull(
+        let results = await streamPull(
             ssb.client().query.read({
                 query: myQuery,
             })
         );
         return this.promisesReducer(results, feedId);
-    } catch(_e) {
+    } catch(e) {
+        console.log("GOT AN ERROR GETTING PROMISES:", e)
         return [];
     }
+  }
 }
 
 module.exports = ssbFlumeAPI;

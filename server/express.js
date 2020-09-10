@@ -123,7 +123,7 @@ app.post("/pub_invite", async (_req, res) => {
 app.post("/publish", async (req, res) => {
     try {
         await ssb.client().identities.publishAs({
-            key: req.context.key,
+            key: req.body.key,
             private: false,
             content: req.body.content,
         });

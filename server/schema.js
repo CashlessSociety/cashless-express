@@ -53,11 +53,13 @@ const typeDefs = gql`
         hash: HashFunc!
         author: Feed!
         sequence: Int!
-        timestamp: Int!
+        timestamp: Date!
         signature: String!
         from: ReservesAccount!
         to: ReservesAccount!
         amount: Float!
+        issueDate: String!
+        vestDate: String!
         denomination: Denomination
         memo: String
         tags: [String]
