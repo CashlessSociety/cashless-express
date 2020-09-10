@@ -1,4 +1,6 @@
 const { gql } = require('apollo-server');
+const Date = require('graphql-date');
+
 
 const typeDefs = gql`
     #type Identity {
@@ -13,10 +15,10 @@ const typeDefs = gql`
         #settlements: [SettlementMessage]
         #active: Boolean
     #}
+    scalar Date
 
     type Feed {
         id: ID!
-        #publicKey: String!
         messages: [Message]
         reserves: ReservesAccount
         assets: [PromiseMessage]
@@ -24,7 +26,7 @@ const typeDefs = gql`
     }
 
     type ReservesAccount {
-        address: String!
+        address: String
         reservesContractAddress: String!
         aliases: [ReservesAlias]
         active: Boolean
@@ -42,7 +44,7 @@ const typeDefs = gql`
         hash: HashFunc!
         author: Feed!
         sequence: Int!
-        timestamp: Int!
+        timestamp: Date!
         signature: String!
     }
 

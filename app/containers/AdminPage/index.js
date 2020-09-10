@@ -57,7 +57,7 @@ export default function AdminPage() {
     const data = new FormData();
     data.append('file', file);
     data.append('filename', name + '.json');
-    axios.post('http://127.0.0.1:3000/upload', data, {}).then(res => {
+    axios.post('http://127.0.0.1:3000/uploadAdminKeyfile', data, {}).then(res => {
       console.log('upload:', res.statusText);
       setBgGreen(true);
       setResetBgTime(now() + 3);
@@ -67,7 +67,7 @@ export default function AdminPage() {
   const onEjectFileHandler = (name, setResetBgTime, inputRef) => {
     const data = new FormData();
     data.append('filename', name + '.json');
-    axios.post('http://127.0.0.1:3000/remove', data, {}).then(res => {
+    axios.post('http://127.0.0.1:3000/removeAdminKeyfile', data, {}).then(res => {
       console.log('remove:', res.statusText);
       setResetBgTime(now() + 3);
       inputRef.current.value = "";
@@ -95,7 +95,7 @@ export default function AdminPage() {
   }
 
   useInterval(async () => {
-    let res = await axios.post('http://127.0.0.1:3000/pollKeyfiles', {}, {});
+    let res = await axios.post('http://127.0.0.1:3000/pollAdminKeyfiles', {}, {});
     for (let i = 0; i < admins.length; i++) {
       if (now() > admins[i].resetBgTime) {
         if (res.data[(i + 1).toString()]) {

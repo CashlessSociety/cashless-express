@@ -5,14 +5,30 @@ export const scope = 'boilerplate.containers.HomePage';
 export default defineMessages({
   joinButton: {
     id: `${scope}.joinButton`,
-    defaultMessage: 'JOIN',
+    defaultMessage: 'join',
   },
   loginButton: {
     id: `${scope}.loginButton`,
-    defaultMessage: 'LOGIN',
+    defaultMessage: 'login',
   },
   downloadButton: {
-    id: `${scope}.downlaodButton`,
+    id: `${scope}.downloadButton`,
     defaultMessage: 'download',
+  },
+  publishButton: {
+    id: `${scope}.publishButton`,
+    defaultMessage: 'publish',
+  },
+  viewButton: {
+    id: `${scope}.viewButton`,
+    defaultMessage: 'query',
+  },
+  profileHeader: {
+    id: `${scope}.profileHeader`,
+    defaultMessage: 'profile:',
+  },
+  explorerHeader: {
+    id: `${scope}.explorerHeader`,
+    defaultMessage: 'get promises:',
   },
 });
