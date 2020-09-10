@@ -1,8 +1,6 @@
 module.exports = {
     Query: {
-      identities: (_, __, { dataSources }) =>
-        dataSources.launchAPI.getAllLaunches(),
-      identity: (_, { id }, { dataSources }) =>
-        dataSources.launchAPI.getLaunchById({ launchId: id }),
+      promises: (_, { id }, {dataSources}) =>
+        dataSources.ssbFlumeAPI.getPromisesByFeedId({ feedId: id}),
     }
   };

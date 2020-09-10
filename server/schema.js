@@ -1,25 +1,26 @@
 const { gql } = require('apollo-server');
 
 const typeDefs = gql`
-    type Identity {
-        id: ID!
+    #type Identity {
+        #id: ID!
         #names: [CommonName]
         #handles: [Handle]
-        feeds: [Feed]
-        reserves: [ReservesAccount]
-        assets: [PromiseMessage]
-        liabilites: [PromiseMessage]
+        #feed: Feed
+        #reserves: ReservesAccount
+        #assets: [PromiseMessage]
+        #liabilites: [PromiseMessage]
         #reciprocities: [ReciprocityMessage]
         #settlements: [SettlementMessage]
-        active: Boolean
-    }
+        #active: Boolean
+    #}
 
     type Feed {
         id: ID!
-        publicKey: String!
-        peers: [Feed]
+        #publicKey: String!
         messages: [Message]
-        active: Boolean
+        reserves: ReservesAccount
+        assets: [PromiseMessage]
+        liabilites: [PromiseMessage]
     }
 
     type ReservesAccount {
@@ -35,6 +36,7 @@ const typeDefs = gql`
     }
 
     interface Message {
+        id: ID!
         msgType: MsgType!
         previous: String
         hash: HashFunc!
@@ -45,6 +47,7 @@ const typeDefs = gql`
     }
 
     type PromiseMessage implements Message {
+        id: ID!
         msgType: MsgType!
         previous: String
         hash: HashFunc!
@@ -58,11 +61,11 @@ const typeDefs = gql`
         denomination: Denomination
         memo: String
         tags: [String]
-        data: PromiseData
+        reservesClaim: ReservesClaim
     }
 
-    type PromiseData {
-        signedClaim: String!
+    type ReservesClaim {
+        data: String!
         fromSignature: EthereumSignature
         toSignature: EthereumSignature
     }
@@ -88,8 +91,7 @@ const typeDefs = gql`
     }
 
     type Query {
-        identities: [Identity]!
-        identity(id: ID!): Identity
+        promises(id: ID!): [PromiseMessage]
     }
 `;
 

@@ -10,18 +10,44 @@ const ssb = require("./lib/ssb-client");
 const https = require('https');
 const app = express();
 const bodyParser = require("body-parser");
-const queries = require("./lib/queries");
+const pull = require("pull-stream");
 const cookieParser = require("cookie-parser");
 const fileUpload = require("express-fileupload");
 const cookieEncrypter = require("cookie-encrypter");
 const fs = require("fs");
-//const ssbKeys = require("ssb-keys");
+const ssbKeys = require("ssb-keys");
 const { sentry } = require("./lib/errors");
 const cors = require('cors');
 const exec = require('child_process').exec;
 
 const ngrok = (isDev && process.env.ENABLE_TUNNEL) || argv.tunnel ? require('ngrok') : false;
 const { resolve } = require('path');
+const crypto = require('crypto')
+
+const randomHash = () => {
+  let bytes = crypto.randomBytes(256);
+  let hash = crypto.createHash('sha256');
+  hash.update(bytes);
+  return hash.digest();
+}
+
+const promisePull = (...streams) =>
+  new Promise((resolve, reject) => {
+    pull(
+      ...streams,
+      pull.collect((err, msgs) => {
+        if (err) return reject(err);
+        return resolve(msgs);
+      })
+    );
+});
+
+const cookieOptions = {
+    httpOnly: true,
+    signed: true,
+    expires: new Date(253402300000000), // Friday, 31 Dec 9999 23:59:59 GMT, nice date from stackoverflow
+    sameSite: "Lax",
+};
 
 const keyshareDir = process.env.KEYSHARE_DIR || __dirname+'/';
 console.log('key and key commands dir:', keyshareDir);
@@ -76,21 +102,62 @@ app.use(async (req, res, next) => {
   if (!key || !key.id) return next();
 
   ssb.client().identities.addUnboxer(key);
-  req.context.profile = (await queries.getProfile(key.id)) || {};
   req.context.key = key;
-
-  const isRootUser = req.context.key.id == ssb.client().id || process.env.NODE_ENV != "production";
-
-  req.context.profile.admin = isRootUser;
 
   next();
 });
 
-app.use("/pub_invite", async (_req, res) => {
+app.post("/login", async (req, res) => {
+    res.cookie("ssb_key", JSON.stringify(req.body.key), cookieOptions);
+    const returnTo = req.body.returnTo;
+    res.redirect(returnTo ? returnTo : "/");
+});
+
+app.post("/pub_invite", async (_req, res) => {
   console.log(ssb.client());
   const invite = await ssb.client().invite.create({ uses: 1 });
 
   res.json({ invite });
+});
+  
+app.post("/publish", async (req, res) => {
+    try {
+        await ssb.client().identities.publishAs({
+            key: req.context.key,
+            private: false,
+            content: req.body.content,
+        });
+    } catch(_e) {
+        return res.json({status: "fail"})
+    }
+
+    return res.json({status: "ok"});
+});
+
+app.post("/getPromises", async (req, res) => {
+    const myQuery = [{
+        "$filter": {
+          value: {
+            author: req.body.id,
+            content: {
+              type: "cashless/promise"
+            }
+          }
+        }
+    }];
+    try {
+        results = await promisePull(
+            ssb.client().query.read({
+                query: myQuery,
+            })
+        );
+        return res.json(results);
+    } catch(e) {
+        return res.json({status: "fail"});
+    }
+});
+app.post("/genKey", async(_req, res) => {
+    return res.json(ssbKeys.generate("ed25519", randomHash()));
 });
 
 app.post("/upload", (req, res) => {
