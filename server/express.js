@@ -13,6 +13,7 @@ const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const fileUpload = require("express-fileupload");
 const cookieEncrypter = require("cookie-encrypter");
+const axios = require("axios");
 const fs = require("fs");
 const { sentry } = require("./lib/errors");
 const cors = require('cors');
@@ -90,17 +91,22 @@ app.post("/login", async (req, res) => {
     return res.json({status: "ok"});
 });
 
-app.post("/pub_invite", async (_req, res) => {
-  console.log(ssb.client());
+app.use("/pub_invite", async (_req, res) => {
   const invite = await ssb.client().invite.create({ uses: 1 });
 
   res.json({ invite });
 });
   
 app.post("/publish", async (req, res) => {
+    let key;
+    if (req.body.key == null) {
+        key = req.context.key;
+    } else {
+        key = req.body.key;
+    }
     try {
         await ssb.client().identities.publishAs({
-            key: req.context.key,
+            key: key,
             private: false,
             content: req.body.content,
         });
@@ -110,6 +116,69 @@ app.post("/publish", async (req, res) => {
     }
 
     return res.json({status: "ok"});
+});
+
+app.use("/transactions", async (_req, res) => {
+    try {
+        const query = `
+        query { allPromises {
+            author {
+                id
+                commonName {
+                    name
+                }
+                reserves {
+                    address
+                }
+            }
+            recipient {
+                id
+                commonName {
+                    name
+                }
+                reserves {
+                    address
+                }
+            }
+            sequence
+            reservesClaim {
+                data
+            }
+        }}`;
+      
+        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        return res.json(r.data.data);
+    } catch(e) {
+        console.log(e);
+        return res.json({status: "fail"});
+    }
+});
+
+app.use("/identities", async (_req, res) => {
+    try {
+        const query = `query  { allIdMsgs {
+            author {
+                id
+            }
+            name {
+              type
+              ... on ReservesAccount {
+                address
+              }
+              ... on CommonName {
+                name
+                id
+              }
+            }
+          }
+        }`;
+      
+        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        return res.json(r.data.data);
+    } catch(e) {
+        console.log(e);
+        return res.json({status: "fail"});
+    }
 });
 
 app.post("/uploadAdminKeyfile", (req, res) => {

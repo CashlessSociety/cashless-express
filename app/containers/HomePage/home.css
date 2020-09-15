@@ -62,3 +62,29 @@ button {
   margin: 0.5em;
   padding: 1em 5em;
 }
+
+p {
+    font-size: 1.5em;
+}
+
+.textField {
+    outline: none;
+    box-shadow: none;
+    border-radius: 1em;
+    border-style: 0.1em solid;
+    border-color: black;
+}
+
+.textField:focus {
+    background-color: lightblue;
+    outline: none;
+}
+
+.found {
+    color: green;
+}
+
+.oldLink {
+    color: blue;
+    text-decoration: underline;
+}

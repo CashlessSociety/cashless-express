@@ -3,33 +3,27 @@ const Date = require('graphql-date');
 
 
 const typeDefs = gql`
-    #type Identity {
-        #id: ID!
-        #names: [CommonName]
-        #handles: [Handle]
-        #feed: Feed
-        #reserves: ReservesAccount
-        #assets: [PromiseMessage]
-        #liabilites: [PromiseMessage]
-        #reciprocities: [ReciprocityMessage]
-        #settlements: [SettlementMessage]
-        #active: Boolean
-    #}
     scalar Date
 
     type Feed {
-        id: ID!
+        id: ID
+        publicKey: String
+        commonName: CommonName
         messages: [Message]
         reserves: ReservesAccount
         assets: [PromiseMessage]
-        liabilites: [PromiseMessage]
+        liabilities: [PromiseMessage]
     }
 
-    type ReservesAccount {
+    interface Name {
+        type: NameType!
+    }
+
+    type ReservesAccount implements Name {
+        type: NameType!
         address: String
-        reservesContractAddress: String!
-        aliases: [ReservesAlias]
-        active: Boolean
+        alias: ReservesAlias
+        initialized: Boolean
     }
 
     type ReservesAlias {
@@ -37,10 +31,17 @@ const typeDefs = gql`
         hash: HashFunc!
     }
 
+    type CommonName implements Name {
+        type: NameType!
+        name: String!
+        id: ID!
+    }
+
     interface Message {
         id: ID!
-        msgType: MsgType!
+        type: MsgType!
         previous: String
+        header: Header
         hash: HashFunc!
         author: Feed!
         sequence: Int!
@@ -50,28 +51,60 @@ const typeDefs = gql`
 
     type PromiseMessage implements Message {
         id: ID!
-        msgType: MsgType!
+        type: MsgType!
+        header: Header
         previous: String
         hash: HashFunc!
         author: Feed!
         sequence: Int!
         timestamp: Date!
         signature: String!
-        from: ReservesAccount!
-        to: ReservesAccount!
+        recipient: Feed!
         amount: Float!
         issueDate: String!
         vestDate: String!
-        denomination: Denomination
+        denomination: Denomination!
         memo: String
         tags: [String]
-        reservesClaim: ReservesClaim
+        reservesClaim: ReservesClaim!
+        resolved: Boolean
+    }
+
+    type IdentityMessage implements Message {
+        id: ID!
+        type: MsgType!
+        header: Header
+        previous: String
+        hash: HashFunc!
+        author: Feed!
+        sequence: Int!
+        timestamp: Date!
+        signature: String!
+        name: Name!
+    }
+
+    type GenericMessage implements Message {
+        id: ID!
+        type: MsgType!
+        header: Header
+        previous: String
+        hash: HashFunc!
+        author: Feed!
+        sequence: Int!
+        timestamp: Date!
+        signature: String!
+        content: String
     }
 
     type ReservesClaim {
         data: String!
         fromSignature: EthereumSignature
         toSignature: EthereumSignature
+    }
+
+    type Header {
+        version: Float
+        network: String
     }
 
     type EthereumSignature {
@@ -92,10 +125,23 @@ const typeDefs = gql`
 
     enum MsgType {
         PROMISE
+        IDENTITY
+        GENERIC
+    }
+
+    enum NameType {
+        COMMON
+        RESERVES
+        ACCOUNT
     }
 
     type Query {
         promises(id: ID!): [PromiseMessage]
+        allPromises: [PromiseMessage]
+        messages(id: ID!): [Message]
+        feed(id: ID!): Feed
+        feedIds: [ID]
+        allIdMsgs: [IdentityMessage]
     }
 `;
 

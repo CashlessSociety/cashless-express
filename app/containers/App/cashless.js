@@ -241,7 +241,7 @@ exports.closeSettlementTx = async (cashless, claimingAddress, claimID) => {
 exports.proposeLoopTx = async (cashless, loopName, addresses, minFlowEth, lockTime) => {
 	let options = {gasLimit: 100000};
 	try {
-		let tx = await cashless.functions.proposeLoop(loopName, addresses, ethers.utils.parseEther(minFlowEth), lockTime);
+		let tx = await cashless.functions.proposeLoop(loopName, addresses, ethers.utils.parseEther(minFlowEth), lockTime, options);
 		console.log("loop proposal tx hash:", tx.hash);
 		return tx.hash;
 	} catch(e) {

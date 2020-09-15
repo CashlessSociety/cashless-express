@@ -19,16 +19,16 @@ export default defineMessages({
     id: `${scope}.publishButton`,
     defaultMessage: 'publish',
   },
-  viewButton: {
-    id: `${scope}.viewButton`,
-    defaultMessage: 'query',
-  },
   profileHeader: {
     id: `${scope}.profileHeader`,
     defaultMessage: 'profile:',
   },
-  explorerHeader: {
-    id: `${scope}.explorerHeader`,
-    defaultMessage: 'get promises:',
+  idInput: {
+    id: `${scope}.idInput`,
+    defaultMessage: 'Id:',
+  },
+  amtInput: {
+    id: `${scope}.amtInput`,
+    defaultMessage: 'Amount (USD):',
   },
 });
