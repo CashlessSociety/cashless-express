@@ -3,6 +3,10 @@ import { defineMessages } from 'react-intl';
 export const scope = 'boilerplate.containers.HomePage';
 
 export default defineMessages({
+  titleBanner: {
+        id: `${scope}.titleBanner`,
+        defaultMessage: 'cashless.social',
+  },
   joinButton: {
     id: `${scope}.joinButton`,
     defaultMessage: 'join',
@@ -17,7 +21,7 @@ export default defineMessages({
   },
   publishButton: {
     id: `${scope}.publishButton`,
-    defaultMessage: 'publish',
+    defaultMessage: 'promise',
   },
   backButton: {
     id: `${scope}.backButton`,

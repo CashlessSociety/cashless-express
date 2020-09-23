@@ -7,7 +7,7 @@
   "boilerplate.containers.AdminPage.adminName4": "Ari",
   "boilerplate.containers.HomePage.joinButton": "JOIN",
   "boilerplate.containers.HomePage.loginButton": "LOGIN",
-  "boilerplate.containers.HomePage.downloadButton": "DOWNLOAD",
+  "boilerplate.containers.HomePage.downloadButton": "download",
   "boilerplate.containers.HomePage.promiseHeader": "Encode a Promise",
   "boilerplate.containers.LocaleToggle.de": "de",
   "boilerplate.containers.LocaleToggle.en": "en",

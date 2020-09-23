@@ -56,7 +56,7 @@ export default function HomePage() {
   const [queryEmail, setQueryEmail] = useState("@gmail.com");
   const [promiseAmount, setAmount] = useState("0.00");
   const [queryFeed, setQueryFeed] = useState(null);
-  const [publishResponse, setPublishResponse] = useState("");
+  const [publishResponse, setPublishResponse] = useState("publish a promise!");
   const [seeAssets, setSeeAssets] = useState(false);
   const [seeLiabilities, setSeeLiabilities] = useState(false);
 
@@ -266,9 +266,8 @@ export default function HomePage() {
         promise.to = queryFeed;
         promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: bufferToHex(claimSig.r), s: bufferToHex(claimSig.s)}, claimData:bufferToHex(claimData)};
     } else {
-        let substring = queryEmail.substring(queryEmail.length-10, queryEmail.length);
-        if (substring != "@gmail.com") {
-            setPublishResponse("cannot promise to: "+queryEmail);
+        if (queryEmail.length>10 && queryEmail.substring(queryEmail.length-10, queryEmail.length) != "@gmail.com") {
+            setPublishResponse("cannot promise to: "+queryEmail+ "(gmail only)");
             return
         }
         promise.to = {verifiedAccounts: [{handle: queryEmail, accountType:"GMAIL"}]};
@@ -296,25 +295,30 @@ export default function HomePage() {
         <meta name="description" content="My homepage" />
       </Helmet>
       {loggedIn==false ?
-        <div className="outerDiv">
+        <div className="outerDiv upper">
             {keyfile==null ? 
-            <div>
-                <button className="raise up" onClick={handleJoin}>
+            <div className="center">
+                <h1><FormattedMessage {...messages.titleBanner} /></h1>
+                <br></br><br></br><br></br><br></br><br></br>
+                <button onClick={handleJoin}>
                     <FormattedMessage {...messages.joinButton} />
                 </button>
                 <input type="file" id="file" className="hiddenFile" onChange={handleKeyfileInput}/>
-                <button className="raise up" onClick={handleLogin}>
+                <button onClick={handleLogin}>
                     <FormattedMessage {...messages.loginButton} />
                 </button>
             </div>
             :
-            <div>
+            <div className="center">
+                <br></br><br></br><br></br><br></br><br></br><br></br>
+                <h1><FormattedMessage {...messages.titleBanner} /></h1>
+                <p>welcome! this is your cashless keyfile.<br></br>you must download it and keep it safe.</p>
                 <textarea className='keyArea' rows="15" cols="60" value={JSON.stringify(keyfile, null, 2)} readOnly>
                 </textarea>
-                <button className="raise up" id="download" onClick={handleDownload}>
+                <button id="download" onClick={handleDownload}>
                     <FormattedMessage {...messages.downloadButton} />
                 </button>
-                <button className="raise up" id="download" onClick={handleBack}>
+                <button id="download" onClick={handleBack}>
                     <FormattedMessage {...messages.backButton} />
                 </button>
             </div>
@@ -322,45 +326,48 @@ export default function HomePage() {
         </div>
         :
         <div className="outerDiv">
-            {myFeed.commonName==null ? <p><FormattedMessage {...messages.nameHeader} />: <FormattedMessage {...messages.unknown} /></p>:<p><FormattedMessage {...messages.nameHeader} />: {myFeed.commonName.name}</p>}
-            <p>
-                <FormattedMessage {...messages.idHeader} />: {keyfile.id}
-            </p>
-            <p>
-                <FormattedMessage {...messages.incomingHeader} />: <span className="green">{getGrossAmount(myFeed.assets)}&nbsp;&nbsp; <a className="oldLink" onClick={handleSeeAssets}>see promises</a></span>
-            </p>
-            {seeAssets==false ? <p></p>:<p>{JSON.stringify(myFeed.assets, null, 4)}</p>}
-            <p>
-                <FormattedMessage {...messages.outgoingHeader} />: <span className="red">{getGrossAmount(myFeed.liabilities)}&nbsp;&nbsp; <a className="oldLink" onClick={handleSeeLiabilities}>see promises</a></span>
-            </p>
-            {seeLiabilities==false ? <p></p>:<p>{JSON.stringify(myFeed.liabilities, null, 4)}</p>}
-            <p>
-                <FormattedMessage {...messages.promiseHeader} />:
-            </p>
-            <p>
-                {sendToEmail==false ?
-                <span>
-                    <FormattedMessage {...messages.idInput} />:&nbsp;&nbsp;&nbsp;
-                    {queryFeed==null  ?
-                        <span><input type="text" className="textField" value={queryId} onChange={handleQueryId}/> <a className="oldLink" onClick={handleSendToEmail}>or send to an email</a></span>
-                        :
-                        <span><span className="green">{queryFeed.commonName==null ? queryFeed.id.substring(0, 5)+"...   ("+queryFeed.reserves.address+")" : queryFeed.id.substring(0, 5)+"...   ("+queryFeed.commonName.name+")"}</span>&nbsp;&nbsp;<a className="oldLink" onClick={handleCancel}>change</a></span>
-                    }
-                </span>
-                :
-                <span>
-                    <FormattedMessage {...messages.emailInput} />:&nbsp;&nbsp;&nbsp;
-                    <input type="text" className="textField" value={queryEmail} onChange={handleQueryEmail}/> <a className="oldLink" onClick={handleSendToId}>or send to an id</a>
-                </span>
-                }   
-            </p>
-            <p>
-                <FormattedMessage {...messages.amtInput} />:&nbsp;&nbsp;&nbsp;<input type="text" className="textField" value={promiseAmount} onChange={handleAmount}/>
-            </p>
-            <button className="raise up" onClick={handlePublish}>
-                <FormattedMessage {...messages.publishButton} />
-            </button>
-            {publishResponse=="" ? <p></p>: <p>{publishResponse}</p>}
+            <h1><FormattedMessage {...messages.titleBanner} /></h1>
+            <br></br><br></br>
+            <div className="center">
+                {myFeed.commonName==null ? <p><FormattedMessage {...messages.nameHeader} />: <FormattedMessage {...messages.unknown} /></p>:<p><FormattedMessage {...messages.nameHeader} />: {myFeed.commonName.name}</p>}
+                <p>
+                    <FormattedMessage {...messages.idHeader} />: {keyfile.id}
+                </p>
+                <p>
+                    <FormattedMessage {...messages.incomingHeader} />: <span className="green">{getGrossAmount(myFeed.assets)}&nbsp;&nbsp; <a className="oldLink" onClick={handleSeeAssets}>see promises</a></span>
+                </p>
+                {seeAssets==false ? <p></p>:<p>{JSON.stringify(myFeed.assets, null, 4)}</p>}
+                <p>
+                    <FormattedMessage {...messages.outgoingHeader} />: <span className="red">{getGrossAmount(myFeed.liabilities)}&nbsp;&nbsp; <a className="oldLink" onClick={handleSeeLiabilities}>see promises</a></span>
+                </p>
+                {seeLiabilities==false ? <p></p>:<p>{JSON.stringify(myFeed.liabilities, null, 4)}</p>}
+            </div>
+            <div className="borderedDiv">
+                <p>
+                    {sendToEmail==false ?
+                    <span>
+                        <FormattedMessage {...messages.idInput} />:&nbsp;
+                        {queryFeed==null  ?
+                            <span><input type="text" className="textField" value={queryId} onChange={handleQueryId}/> <a className="oldLink" onClick={handleSendToEmail}>or send to an email</a></span>
+                            :
+                            <span><span className="green">{queryFeed.commonName==null ? queryFeed.id.substring(0, 5)+"...   ("+queryFeed.reserves.address+")" : queryFeed.id.substring(0, 5)+"...   ("+queryFeed.commonName.name+")"}</span>&nbsp;&nbsp;<a className="oldLink" onClick={handleCancel}>change</a></span>
+                        }
+                    </span>
+                    :
+                    <span>
+                        <FormattedMessage {...messages.emailInput} />:&nbsp;
+                        <input type="text" className="textField" value={queryEmail} onChange={handleQueryEmail}/> <a className="oldLink" onClick={handleSendToId}>or send to an id</a>
+                    </span>
+                    }   
+                </p>
+                <p>
+                    <FormattedMessage {...messages.amtInput} />:&nbsp;<input type="text" className="textField" value={promiseAmount} onChange={handleAmount}/>
+                </p>
+                <button onClick={handlePublish}>
+                    <FormattedMessage {...messages.publishButton} />
+                </button>
+                {publishResponse=="" ? <p></p>: <p>{publishResponse}</p>}
+            </div>
         </div>
     }
     </article>

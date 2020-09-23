@@ -1,16 +1,15 @@
-@import url(https://fonts.googleapis.com/css?family=Lato:400,900); 
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap');
 
 .top_lvl {
-    margin: 0 0;
     position: absolute;
     min-height: 100%;
     font-size: 12px;
-    font-family: 'Lato';
+    font-family: 'Courier Prime', monospace;
     min-width: 100%;
 }
 
-@media only screen and (max-height: 730px) {
+/*@media only screen and (max-height: 730px) {
     .top_lvl {
         font-size: 10px !important;
     } 
-}
+}*/

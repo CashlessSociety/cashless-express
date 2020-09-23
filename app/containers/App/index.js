@@ -19,7 +19,7 @@ import Footer from 'components/Footer';
 import './app.css';
 
 const AppWrapper = styled.div`
-  max-width: calc(768px + 16px * 2);
+  max-width: 100%;
 `;
 
 export default function App() {
@@ -36,8 +36,7 @@ export default function App() {
         <Route exact path="/" component={HomePage} />
         <Route exact path="/admin" component={AdminPage} />
         <Route path="" component={NotFoundPage} />
-      </Switch>
-      <Footer />   
+      </Switch>  
     </AppWrapper>
   );
 }
