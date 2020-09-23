@@ -13,11 +13,18 @@ module.exports = {
     Name: {
         __resolveType(msg, _context, _info){
             if (msg.type == "RESERVES") {
-                return 'ReservesAccount';
+                return 'ReservesAddress';
+            } else if (msg.type == "ACCOUNT") {
+                return 'Account';
             } else {
                 return 'CommonName';
             }
         },
+    },
+    Evidence: {
+        __resolveType(_msg, _context, _info){
+            return 'Message';
+        }
     },
     Query: {
         promises: (_, { id }, {dataSources}) =>
@@ -28,9 +35,9 @@ module.exports = {
             dataSources.ssbFlumeAPI.getFeedMessages({ feedId: id }),
         feed: (_, { id }, { dataSources }) =>
             dataSources.ssbFlumeAPI.getFeed({ feedId: id }),
-        feedIds: (_, __, {dataSources}) =>
-            dataSources.ssbFlumeAPI.getFeedIds(),
         allIdMsgs: (_, __, {dataSources}) =>
             dataSources.ssbFlumeAPI.getAllIdMsgs(),
+        pendingPromises: (_, { id }, {dataSources}) =>
+            dataSources.ssbFlumeAPI.getPendingPromisesByFeedId({ feedId: id }),
     }
   };

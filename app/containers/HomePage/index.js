@@ -32,17 +32,20 @@ const now = () => {
     return Math.floor(Date.now() / 1000);
   };
 
-const network = "ropsten";
-const emptyHash = "0x0000000000000000000000000000000000000000000000000000000000000000"
+const network = "rinkeby";
+const version = 1.0;
+const emptyHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
 const providerURL = "https://"+network+".infura.io/v3/fef5fecf13fb489387683541edfbd958";
 
 export default function HomePage() {
 
   const [keyfile, setKeyfile] = useState(null);
+  const [myName, setMyName] = useState(null);
+  const [myAccounts, setMyAccounts] = useState(null);
   const [loggedIn, setLoggedIn] = useState(false);
+
   const [queryId, setQueryId] = useState("@");
   const [promiseAmount, setAmount] = useState("0.00");
-  const [myName, setMyName] = useState(null);
   const [queryFeed, setQueryFeed] = useState(null);
   const [publishResponse, setPublishResponse] = useState("");
 
@@ -59,7 +62,7 @@ export default function HomePage() {
     // !! never pass ethereum keys to the backend
     let noEthKey = JSON.parse(JSON.stringify(key));
     delete noEthKey.eth;
-    let idmsg = {name: {type:"RESERVES", address: key.eth.address}, type: "cashless/identity", header: {version: 1.0, network: network}};
+    let idmsg = {feed: {id: key.id}, name: {type:"RESERVES", address: key.eth.address}, type: "cashless/identity", header: {version: version, network: network}, evidence:null};
     try {
         let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg, key: noEthKey}, {});
         if (r.data.status=="ok") {
@@ -92,6 +95,10 @@ export default function HomePage() {
                     name
                     id
                 }
+                verifiedAccounts {
+                    handle
+                    accountType
+                }
               }
             }`;
           
@@ -99,6 +106,7 @@ export default function HomePage() {
             if (r.data.data.feed != null && r.data.data.feed.reserves != null) {
                 setKeyfile(key);
                 setMyName(r.data.data.feed.commonName);
+                setMyAccounts(r.data.data.feed.verifiedAccounts);
                 setLoggedIn(true);
             }
         } catch (e) {
@@ -170,13 +178,13 @@ export default function HomePage() {
     let vestTime = now()+(60*86400);
     let voidTime = now()+(500*86400);
     let disputeDuration = 2*86400;
-    let claimData = cashless.encodeClaim(promiseAmount, disputeDuration, vestTime, voidTime, keyfile.eth.address, queryFeed.reserves.address, claimName, emptyHash, emptyHash, 1);
+    let claimData = cashless.encodeClaim(promiseAmount, disputeDuration, vestTime, voidTime, keyfile.eth.address, queryFeed.reserves.address, claimName, emptyHash, 1);
     let contract = cashless.contract(providerURL, keyfile.eth.private);
     let libContract = cashless.libContract(providerURL);
     let claimSig = await cashless.signClaim(contract, libContract, claimData);
     promise.to = queryFeed;
     promise.from = {id: keyfile.id, commonName: myName, reserves: {address: keyfile.eth.address}};
-    promise.promise = {denomination:"USD", amount: Number(promiseAmount), issueDate: new Date().toISOString(), vestDate: new Date(vestTime).toISOString(), fromSignature:{v: claimSig.v, r: bufferToHex(claimSig.r), s: bufferToHex(claimSig.s)}, claimData:bufferToHex(claimData)};
+    promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: new Date().toISOString(), vestDate: new Date(vestTime).toISOString(), fromSignature:{v: claimSig.v, r: bufferToHex(claimSig.r), s: bufferToHex(claimSig.s)}, claimData:bufferToHex(claimData)};
     let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise}, {});
     if (res.data.status=="ok") {
         setPublishResponse("published!");

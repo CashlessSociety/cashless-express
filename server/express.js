@@ -122,6 +122,7 @@ app.use("/transactions", async (_req, res) => {
     try {
         const query = `
         query { allPromises {
+            id
             author {
                 id
                 commonName {
@@ -141,13 +142,16 @@ app.use("/transactions", async (_req, res) => {
                 }
             }
             sequence
-            reservesClaim {
+            claimName
+            amount
+            denomination
+            claim {
                 data
             }
         }}`;
       
         let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
-        return res.json(r.data.data);
+        return res.json(r.data.data.allPromises);
     } catch(e) {
         console.log(e);
         return res.json({status: "fail"});
@@ -162,7 +166,7 @@ app.use("/identities", async (_req, res) => {
             }
             name {
               type
-              ... on ReservesAccount {
+              ... on ReservesAddress {
                 address
               }
               ... on CommonName {
@@ -174,7 +178,7 @@ app.use("/identities", async (_req, res) => {
         }`;
       
         let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
-        return res.json(r.data.data);
+        return res.json(r.data.data.allIdMsgs);
     } catch(e) {
         console.log(e);
         return res.json({status: "fail"});

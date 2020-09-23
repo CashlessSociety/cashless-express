@@ -5,36 +5,37 @@ const Date = require('graphql-date');
 const typeDefs = gql`
     scalar Date
 
-    type Feed {
-        id: ID
-        publicKey: String
-        commonName: CommonName
-        messages: [Message]
-        reserves: ReservesAccount
-        assets: [PromiseMessage]
-        liabilities: [PromiseMessage]
-    }
-
     interface Name {
         type: NameType!
     }
 
-    type ReservesAccount implements Name {
+    type Feed implements Name {
         type: NameType!
-        address: String
-        alias: ReservesAlias
-        initialized: Boolean
+        id: ID
+        publicKey: String
+        reserves: ReservesAddress
+        commonName: CommonName
+        verifiedAccounts: [AccountHandle]
+        messages: [Message]
+        assets: [PromiseMessage]
+        liabilities: [PromiseMessage]
     }
 
-    type ReservesAlias {
-        name: String!
-        hash: HashFunc!
+    type ReservesAddress implements Name {
+        type: NameType!
+        address: String
     }
 
     type CommonName implements Name {
         type: NameType!
-        name: String!
-        id: ID!
+        name: String
+        id: ID
+    }
+
+    type AccountHandle implements Name {
+        type: NameType!
+        accountType: AccountType
+        handle: String
     }
 
     interface Message {
@@ -42,11 +43,11 @@ const typeDefs = gql`
         type: MsgType!
         previous: String
         header: Header
-        hash: HashFunc!
-        author: Feed!
-        sequence: Int!
-        timestamp: Date!
-        signature: String!
+        hash: HashFunc
+        author: Feed
+        sequence: Int
+        timestamp: Date
+        signature: String
     }
 
     type PromiseMessage implements Message {
@@ -54,20 +55,22 @@ const typeDefs = gql`
         type: MsgType!
         header: Header
         previous: String
-        hash: HashFunc!
-        author: Feed!
-        sequence: Int!
-        timestamp: Date!
-        signature: String!
-        recipient: Feed!
-        amount: Float!
-        issueDate: String!
-        vestDate: String!
-        denomination: Denomination!
+        hash: HashFunc
+        author: Feed
+        sequence: Int
+        timestamp: Date
+        signature: String
+        recipient: Feed
+        amount: Float
+        issueDate: String
+        vestDate: String
+        denomination: Denomination
         memo: String
         tags: [String]
-        reservesClaim: ReservesClaim!
-        resolved: Boolean
+        nonce: Int
+        claimName: ID
+        claim: ReservesClaim
+        isLatest: Boolean
     }
 
     type IdentityMessage implements Message {
@@ -75,12 +78,14 @@ const typeDefs = gql`
         type: MsgType!
         header: Header
         previous: String
-        hash: HashFunc!
-        author: Feed!
-        sequence: Int!
-        timestamp: Date!
-        signature: String!
-        name: Name!
+        hash: HashFunc
+        author: Feed
+        sequence: Int
+        timestamp: Date
+        signature: String
+        feed: Feed
+        name: Name
+        evidence: Evidence
     }
 
     type GenericMessage implements Message {
@@ -88,16 +93,25 @@ const typeDefs = gql`
         type: MsgType!
         header: Header
         previous: String
-        hash: HashFunc!
-        author: Feed!
-        sequence: Int!
-        timestamp: Date!
-        signature: String!
+        hash: HashFunc
+        author: Feed
+        sequence: Int
+        timestamp: Date
+        signature: String
         content: String
     }
 
+    interface Evidence {
+        type: EvidenceType!
+    }
+
+    type MessageEvidence implements Evidence {
+        type: EvidenceType!
+        id: ID
+    }
+
     type ReservesClaim {
-        data: String!
+        data: String
         fromSignature: EthereumSignature
         toSignature: EthereumSignature
     }
@@ -129,10 +143,21 @@ const typeDefs = gql`
         GENERIC
     }
 
+    enum EvidenceType {
+        MESSAGE
+    }
+
     enum NameType {
+        FEED
         COMMON
         RESERVES
         ACCOUNT
+    }
+
+    enum AccountType {
+        FACEBOOK
+        GMAIL
+        TWITTER
     }
 
     type Query {
@@ -140,8 +165,8 @@ const typeDefs = gql`
         allPromises: [PromiseMessage]
         messages(id: ID!): [Message]
         feed(id: ID!): Feed
-        feedIds: [ID]
         allIdMsgs: [IdentityMessage]
+        pendingPromises(id: ID!): [PromiseMessage]
     }
 `;
 
