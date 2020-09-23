@@ -30,7 +30,16 @@ const randomHash = () => {
 
 const now = () => {
     return Math.floor(Date.now() / 1000);
-  };
+}
+
+const getGrossAmount = (promises) => {
+    let gross = 0
+    for (let i=0; i<promises.length; i++) {
+        gross += promises[i].amount
+    }
+
+    return gross
+}
 
 const network = "rinkeby";
 const version = 1.0;
@@ -40,11 +49,11 @@ const providerURL = "https://"+network+".infura.io/v3/fef5fecf13fb489387683541ed
 export default function HomePage() {
 
   const [keyfile, setKeyfile] = useState(null);
-  const [myName, setMyName] = useState(null);
-  const [myAccounts, setMyAccounts] = useState(null);
+  const [myFeed, setMyFeed] = useState(null);
   const [loggedIn, setLoggedIn] = useState(false);
-
+  const [sendToEmail, setSendToEmail] = useState(false);
   const [queryId, setQueryId] = useState("@");
+  const [queryEmail, setQueryEmail] = useState("@gmail.com");
   const [promiseAmount, setAmount] = useState("0.00");
   const [queryFeed, setQueryFeed] = useState(null);
   const [publishResponse, setPublishResponse] = useState("");
@@ -99,14 +108,43 @@ export default function HomePage() {
                     handle
                     accountType
                 }
+                assets {
+                    amount
+                    denomination
+                    vestDate
+                    nonce
+                    recipient {
+                        id
+                        reserves {
+                            address
+                        }
+                        commonName {
+                            name
+                        }
+                    }
+                }
+                liabilities {
+                    author {
+                        id
+                        reserves {
+                            address
+                        }
+                        commonName {
+                            name
+                        }
+                    }
+                    amount
+                    denomination
+                    vestDate
+                    nonce
+                }
               }
             }`;
           
             let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
             if (r.data.data.feed != null && r.data.data.feed.reserves != null) {
                 setKeyfile(key);
-                setMyName(r.data.data.feed.commonName);
-                setMyAccounts(r.data.data.feed.verifiedAccounts);
+                setMyFeed(r.data.data.feed);
                 setLoggedIn(true);
             }
         } catch (e) {
@@ -157,37 +195,65 @@ export default function HomePage() {
       }
   }
 
+  const handleQueryEmail = async evt => {
+      setQueryEmail(evt.target.value);
+  }
+
   const handleCancel = _evt => {
     setQueryId(queryId.substring(0, queryId.length-1));
+    setQueryEmail("@gmail.com");
     setQueryFeed(null);
+  }
+
+  const handleSendToEmail = _evt => {
+      setSendToEmail(true);
+  }
+
+  const handleSendToId = _evt => {
+      setSendToEmail(false);
   }
 
   const handlePublish = async _evt => {
     if (Number(promiseAmount)<=0) {
-        setPublishResponse("amount not set");
-        return
-    }
-    if (queryFeed.id==keyfile.id) {
-        setPublishResponse("cannot promise to yourself");
+        setPublishResponse("promised amount cannot be zero");
         return
     }
     let promise = {type: "cashless/promise", header: {version: 1.0, network: network}};
-    // VERY IMPORTANT TO DO (wrong amount of ether)
-
     let claimName = bufferToHex(randomHash());
     let vestTime = now()+(60*86400);
     let voidTime = now()+(500*86400);
-    let disputeDuration = 2*86400;
-    let claimData = cashless.encodeClaim(promiseAmount, disputeDuration, vestTime, voidTime, keyfile.eth.address, queryFeed.reserves.address, claimName, emptyHash, 1);
-    let contract = cashless.contract(providerURL, keyfile.eth.private);
-    let libContract = cashless.libContract(providerURL);
-    let claimSig = await cashless.signClaim(contract, libContract, claimData);
-    promise.to = queryFeed;
-    promise.from = {id: keyfile.id, commonName: myName, reserves: {address: keyfile.eth.address}};
-    promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: new Date().toISOString(), vestDate: new Date(vestTime).toISOString(), fromSignature:{v: claimSig.v, r: bufferToHex(claimSig.r), s: bufferToHex(claimSig.s)}, claimData:bufferToHex(claimData)};
+    promise.from = {id: keyfile.id, commonName: myFeed.commonName, reserves: {address: keyfile.eth.address}};
+    if (!sendToEmail) {
+        if (queryFeed==null) {
+            setPublishResponse("must promise to an existing id");
+        }
+        if (queryFeed.id==keyfile.id) {
+            setPublishResponse("cannot promise to yourself");
+            return
+        }
+        let disputeDuration = 2*86400;
+        let claimData = cashless.encodeClaim(promiseAmount, disputeDuration, vestTime, voidTime, keyfile.eth.address, queryFeed.reserves.address, claimName, emptyHash, 1);
+        let contract = cashless.contract(providerURL, keyfile.eth.private);
+        let libContract = cashless.libContract(providerURL);
+        let claimSig = await cashless.signClaim(contract, libContract, claimData);
+        promise.to = queryFeed;
+        promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: new Date().toISOString(), vestDate: new Date(vestTime).toISOString(), fromSignature:{v: claimSig.v, r: bufferToHex(claimSig.r), s: bufferToHex(claimSig.s)}, claimData:bufferToHex(claimData)};
+    } else {
+        let substring = queryEmail.substring(queryEmail.length-10, queryEmail.length);
+        if (substring != "@gmail.com") {
+            setPublishResponse("cannot promise to: "+queryEmail);
+            return
+        }
+        promise.to = {verifiedAccounts: [{handle: queryEmail, accountType:"GMAIL"}]};
+        promise.promise = {nonce:0, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: new Date().toISOString(), vestDate: new Date(vestTime).toISOString()};
+    }
     let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise}, {});
     if (res.data.status=="ok") {
-        setPublishResponse("published!");
+        if (!sendToEmail) {
+            setPublishResponse("published!");
+        } else {
+            setPublishResponse("published promise to: "+queryEmail+" (must authenticate with email to claim)");
+        }
         setQueryId("@");
         setQueryFeed(null);
         setAmount("0.00");
@@ -224,23 +290,38 @@ export default function HomePage() {
         </div>
         :
         <div className="joinDiv">
-            {myName==null ? <p></p>:<p>{myName.name}</p>}
+            {myFeed.commonName==null ? <p><FormattedMessage {...messages.nameHeader} />: <FormattedMessage {...messages.unknown} /></p>:<p><FormattedMessage {...messages.nameHeader} />: {myFeed.commonName.name}</p>}
             <p>
-                ID: {keyfile.id}
+                <FormattedMessage {...messages.idHeader} />: {keyfile.id}
             </p>
             <p>
-                <FormattedMessage {...messages.profileHeader} />
-            </p>
-            <p> 
-                <FormattedMessage {...messages.idInput} />&nbsp;&nbsp;&nbsp;
-                {queryFeed==null  ?
-                    <input type="text" className="textField" value={queryId} onChange={handleQueryId}/>
-                    :
-                    <span><span className="found">{queryFeed.commonName==null ? queryFeed.id.substring(0, 5)+"...       ("+queryFeed.reserves.address+")" : queryFeed.id.substring(0, 5)+"...       ("+queryFeed.commonName.name+")"}</span>&nbsp;&nbsp;<a className="oldLink" onClick={handleCancel}>change</a></span>
-                }
+                <FormattedMessage {...messages.incomingHeader} />: <span className="green">{getGrossAmount(myFeed.assets)}</span>
             </p>
             <p>
-                <FormattedMessage {...messages.amtInput} />&nbsp;&nbsp;&nbsp;<input type="text" className="textField" value={promiseAmount} onChange={handleAmount}/>
+                <FormattedMessage {...messages.outgoingHeader} />: <span className="red">{getGrossAmount(myFeed.liabilities)}</span>
+            </p>
+            <p>
+                <FormattedMessage {...messages.promiseHeader} />:
+            </p>
+            <p>
+                {sendToEmail==false ?
+                <span>
+                    <FormattedMessage {...messages.idInput} />:&nbsp;&nbsp;&nbsp;
+                    {queryFeed==null  ?
+                        <span><input type="text" className="textField" value={queryId} onChange={handleQueryId}/> <a className="oldLink" onClick={handleSendToEmail}>or send to an email</a></span>
+                        :
+                        <span><span className="green">{queryFeed.commonName==null ? queryFeed.id.substring(0, 5)+"...   ("+queryFeed.reserves.address+")" : queryFeed.id.substring(0, 5)+"...   ("+queryFeed.commonName.name+")"}</span>&nbsp;&nbsp;<a className="oldLink" onClick={handleCancel}>change</a></span>
+                    }
+                </span>
+                :
+                <span>
+                    <FormattedMessage {...messages.emailInput} />:&nbsp;&nbsp;&nbsp;
+                    <input type="text" className="textField" value={queryEmail} onChange={handleQueryEmail}/> <a className="oldLink" onClick={handleSendToId}>or send to an id</a>
+                </span>
+                }   
+            </p>
+            <p>
+                <FormattedMessage {...messages.amtInput} />:&nbsp;&nbsp;&nbsp;<input type="text" className="textField" value={promiseAmount} onChange={handleAmount}/>
             </p>
             <button className="raise up" onClick={handlePublish}>
                 <FormattedMessage {...messages.publishButton} />

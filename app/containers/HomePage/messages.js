@@ -19,16 +19,40 @@ export default defineMessages({
     id: `${scope}.publishButton`,
     defaultMessage: 'publish',
   },
-  profileHeader: {
-    id: `${scope}.profileHeader`,
-    defaultMessage: 'profile:',
+  promiseHeader: {
+    id: `${scope}.promiseHeader`,
+    defaultMessage: 'Encode a promise',
   },
   idInput: {
     id: `${scope}.idInput`,
-    defaultMessage: 'Id:',
+    defaultMessage: 'ID',
   },
   amtInput: {
     id: `${scope}.amtInput`,
-    defaultMessage: 'Amount (USD):',
+    defaultMessage: 'Amount (USD)',
+  },
+  incomingHeader: {
+    id: `${scope}.incomingHeader`,
+    defaultMessage: 'Incoming',
+  },
+  outgoingHeader: {
+    id: `${scope}.outgoingHeader`,
+    defaultMessage: 'Outgoing',
+  },
+  nameHeader: {
+    id: `${scope}.nameHeader`,
+    defaultMessage: 'Name',
+  },
+  idHeader: {
+    id: `${scope}.idHeader`,
+    defaultMessage: 'ID',
+  },
+  emailInput: {
+    id: `${scope}.emailInput`,
+    defaultMessage: 'Email',
+  },
+  unknown: {
+    id: `${scope}.unknown`,
+    defaultMessage: '(unknown)',
   },
 });

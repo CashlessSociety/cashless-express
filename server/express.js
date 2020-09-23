@@ -140,6 +140,10 @@ app.use("/transactions", async (_req, res) => {
                 reserves {
                     address
                 }
+                verifiedAccounts {
+                    accountType
+                    handle
+                }
             }
             sequence
             claimName

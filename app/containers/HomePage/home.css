@@ -46,10 +46,10 @@ button {
   color: #fff;
   transition: 0.25s;
   
-  &:hover,
+  /*&:hover,
   &:focus {
     border-color: var(--hover);
-  }
+  }*/
 }
 
 button {
@@ -80,8 +80,12 @@ p {
     outline: none;
 }
 
-.found {
+.green {
     color: green;
+}
+
+.red {
+    color: red;
 }
 
 .oldLink {

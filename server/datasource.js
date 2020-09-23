@@ -40,7 +40,7 @@ class ssbFlumeAPI extends DataSource {
         promise.value.content.to.commonName.type = "COMMON";
       }
       if (promise.value.content.to.verifiedAccounts != null) {
-        for (let j=0; j<promise.value.content.to.verifiedAccounts.length; i++) {
+        for (let j=0; j<promise.value.content.to.verifiedAccounts.length; j++) {
             promise.value.content.to.verifiedAccounts[j].type = "ACCOUNT";
         }
       }

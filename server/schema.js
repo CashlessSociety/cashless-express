@@ -134,7 +134,6 @@ const typeDefs = gql`
 
     enum Denomination {
         USD
-        ETH
     }
 
     enum MsgType {
@@ -161,14 +160,14 @@ const typeDefs = gql`
     }
 
     type Query {
-        promises(id: ID!): [PromiseMessage]
-        allPromises: [PromiseMessage]
-        promise(claimName: ID!): [PromiseMessage]
-        messages(id: ID!): [Message]
-        feed(id: ID!): Feed
-        allIdMsgs: [IdentityMessage]
-        pendingPromises(id: ID!): [PromiseMessage]
         allFeedIds: [ID]
+        allPromises: [PromiseMessage]
+        allIdMsgs: [IdentityMessage]
+        feed(id: ID!): Feed
+        promises(feedId: ID!): [PromiseMessage]
+        promise(claimName: ID!): [PromiseMessage]
+        messages(feedId: ID!): [Message]
+        pendingPromises(feedId: ID!): [PromiseMessage]
     }
 `;
 
