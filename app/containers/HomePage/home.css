@@ -10,7 +10,7 @@
     - If you're animating multiple shadows, be sure to keep the same number of shadows so the animation is smooth. Otherwise, you'll get something choppy.
 */
 
-.joinDiv{
+.outerDiv{
     position: absolute;
     left: 50%;
     top: 50%;

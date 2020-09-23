@@ -57,6 +57,8 @@ export default function HomePage() {
   const [promiseAmount, setAmount] = useState("0.00");
   const [queryFeed, setQueryFeed] = useState(null);
   const [publishResponse, setPublishResponse] = useState("");
+  const [seeAssets, setSeeAssets] = useState(false);
+  const [seeLiabilities, setSeeLiabilities] = useState(false);
 
   const newKey = () => {
     let key = ssbKeys.generate("ed25519", randomHash());
@@ -87,6 +89,68 @@ export default function HomePage() {
     document.getElementById("file").click();
   }
 
+  const getMyFeed = async (feedId) => {
+    const query = `query { feed(id:"`+feedId+`") {
+        reserves {
+            address
+        }
+        commonName {
+            name
+            id
+        }
+        verifiedAccounts {
+            handle
+            accountType
+        }
+        assets {
+            amount
+            denomination
+            vestDate
+            nonce
+            author {
+                id
+                reserves {
+                    address
+                }
+                commonName {
+                    name
+                }
+            }
+        }
+        liabilities {
+            recipient {
+                id
+                reserves {
+                    address
+                }
+                commonName {
+                    name
+                }
+                verifiedAccounts {
+                    accountType
+                    handle
+                }
+            }
+            amount
+            denomination
+            vestDate
+            nonce
+        }
+      }
+    }`;
+    try {
+        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        if (r.data.data.feed != null && r.data.data.feed.reserves != null) {
+            setMyFeed(r.data.data.feed);
+            return true
+        }
+        return false
+    } catch(e) {
+        console.log('could not find feed:', e.message);
+        return false
+    }
+  }
+
   const handleKeyfileInput = async evt => {
     const fileLoaded = async e => {
       let key = JSON.parse(e.target.result);
@@ -95,60 +159,10 @@ export default function HomePage() {
       delete noEthKey.eth;
       let res = await axios.post('http://127.0.0.1:3000/login', {key: noEthKey}, {});
       if (res.data.status == "ok") {
-        try {
-            const query = `query { feed(id:"`+key.id+`") {
-                reserves {
-                    address
-                }
-                commonName {
-                    name
-                    id
-                }
-                verifiedAccounts {
-                    handle
-                    accountType
-                }
-                assets {
-                    amount
-                    denomination
-                    vestDate
-                    nonce
-                    recipient {
-                        id
-                        reserves {
-                            address
-                        }
-                        commonName {
-                            name
-                        }
-                    }
-                }
-                liabilities {
-                    author {
-                        id
-                        reserves {
-                            address
-                        }
-                        commonName {
-                            name
-                        }
-                    }
-                    amount
-                    denomination
-                    vestDate
-                    nonce
-                }
-              }
-            }`;
-          
-            let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
-            if (r.data.data.feed != null && r.data.data.feed.reserves != null) {
-                setKeyfile(key);
-                setMyFeed(r.data.data.feed);
-                setLoggedIn(true);
-            }
-        } catch (e) {
-            console.log('could not find id:', e);
+        let ok = await getMyFeed(key.id);
+        if (ok) {
+            setKeyfile(key);
+            setLoggedIn(true);
         }
       }
     }
@@ -213,6 +227,14 @@ export default function HomePage() {
       setSendToEmail(false);
   }
 
+  const handleSeeAssets= _evt => {
+    setSeeAssets(true);
+  }
+
+  const handleSeeLiabilities = _evt => {
+    setSeeLiabilities(true);
+  }
+
   const handlePublish = async _evt => {
     if (Number(promiseAmount)<=0) {
         setPublishResponse("promised amount cannot be zero");
@@ -220,8 +242,9 @@ export default function HomePage() {
     }
     let promise = {type: "cashless/promise", header: {version: 1.0, network: network}};
     let claimName = bufferToHex(randomHash());
-    let vestTime = now()+(60*86400);
-    let voidTime = now()+(500*86400);
+    let issueTime = now();
+    let vestTime = issueTime+(60*86400);
+    let voidTime = issueTime+(500*86400);
     promise.from = {id: keyfile.id, commonName: myFeed.commonName, reserves: {address: keyfile.eth.address}};
     if (!sendToEmail) {
         if (queryFeed==null) {
@@ -237,7 +260,7 @@ export default function HomePage() {
         let libContract = cashless.libContract(providerURL);
         let claimSig = await cashless.signClaim(contract, libContract, claimData);
         promise.to = queryFeed;
-        promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: new Date().toISOString(), vestDate: new Date(vestTime).toISOString(), fromSignature:{v: claimSig.v, r: bufferToHex(claimSig.r), s: bufferToHex(claimSig.s)}, claimData:bufferToHex(claimData)};
+        promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: bufferToHex(claimSig.r), s: bufferToHex(claimSig.s)}, claimData:bufferToHex(claimData)};
     } else {
         let substring = queryEmail.substring(queryEmail.length-10, queryEmail.length);
         if (substring != "@gmail.com") {
@@ -245,7 +268,7 @@ export default function HomePage() {
             return
         }
         promise.to = {verifiedAccounts: [{handle: queryEmail, accountType:"GMAIL"}]};
-        promise.promise = {nonce:0, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: new Date().toISOString(), vestDate: new Date(vestTime).toISOString()};
+        promise.promise = {nonce:0, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime};
     }
     let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise}, {});
     if (res.data.status=="ok") {
@@ -257,6 +280,8 @@ export default function HomePage() {
         setQueryId("@");
         setQueryFeed(null);
         setAmount("0.00");
+        setQueryEmail("@gmail.com");
+        let ok = await getMyFeed(keyfile.id);
     }
   }
 
@@ -267,7 +292,7 @@ export default function HomePage() {
         <meta name="description" content="My homepage" />
       </Helmet>
       {loggedIn==false ?
-        <div className="joinDiv">
+        <div className="outerDiv">
             {keyfile==null ? 
             <div>
                 <button className="raise up" onClick={handleJoin}>
@@ -289,17 +314,19 @@ export default function HomePage() {
             }
         </div>
         :
-        <div className="joinDiv">
+        <div className="outerDiv">
             {myFeed.commonName==null ? <p><FormattedMessage {...messages.nameHeader} />: <FormattedMessage {...messages.unknown} /></p>:<p><FormattedMessage {...messages.nameHeader} />: {myFeed.commonName.name}</p>}
             <p>
                 <FormattedMessage {...messages.idHeader} />: {keyfile.id}
             </p>
             <p>
-                <FormattedMessage {...messages.incomingHeader} />: <span className="green">{getGrossAmount(myFeed.assets)}</span>
+                <FormattedMessage {...messages.incomingHeader} />: <span className="green">{getGrossAmount(myFeed.assets)}&nbsp;&nbsp; <a className="oldLink" onClick={handleSeeAssets}>see promises</a></span>
             </p>
+            {seeAssets==false ? <p></p>:<p>{JSON.stringify(myFeed.assets, null, 4)}</p>}
             <p>
-                <FormattedMessage {...messages.outgoingHeader} />: <span className="red">{getGrossAmount(myFeed.liabilities)}</span>
+                <FormattedMessage {...messages.outgoingHeader} />: <span className="red">{getGrossAmount(myFeed.liabilities)}&nbsp;&nbsp; <a className="oldLink" onClick={handleSeeLiabilities}>see promises</a></span>
             </p>
+            {seeLiabilities==false ? <p></p>:<p>{JSON.stringify(myFeed.liabilities, null, 4)}</p>}
             <p>
                 <FormattedMessage {...messages.promiseHeader} />:
             </p>

@@ -62,8 +62,8 @@ const typeDefs = gql`
         signature: String
         recipient: Feed
         amount: Float
-        issueDate: String
-        vestDate: String
+        issueDate: Date
+        vestDate: Date
         denomination: Denomination
         memo: String
         tags: [String]

@@ -135,10 +135,10 @@ class ssbFlumeAPI extends DataSource {
         }
       }
       let allPromises = await this.getAllPromises();
-      let liabilities = [];
+      let promised = [];
       for (let i=0; i<allPromises.length; i++) {
           if (allPromises[i].isLatest && allPromises[i].recipient.id == feedId) {
-            liabilities.push(allPromises[i]);
+            promised.push(allPromises[i]);
           }
       }
       let promises = await this.getPromisesByFeedId({ feedId });
@@ -153,11 +153,11 @@ class ssbFlumeAPI extends DataSource {
           id: feedId,
           publicKey: feedId.substring(1, feedId.length),
           messages: feedMsgs,
-          assets: promises,
+          assets: promised,
           verifiedAccounts: accounts,
           reserves: reserves,
           commonName: commonName,
-          liabilities: liabilities,
+          liabilities: promises,
       }
   }
 
