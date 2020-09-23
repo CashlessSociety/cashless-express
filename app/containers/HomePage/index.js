@@ -180,6 +180,10 @@ export default function HomePage() {
     link.click();
   }
 
+  const handleBack = _evt => {
+      setKeyfile(null);
+  }
+
   const handleAmount = evt => {
       setAmount(evt.target.value);
   }
@@ -309,6 +313,9 @@ export default function HomePage() {
                 </textarea>
                 <button className="raise up" id="download" onClick={handleDownload}>
                     <FormattedMessage {...messages.downloadButton} />
+                </button>
+                <button className="raise up" id="download" onClick={handleBack}>
+                    <FormattedMessage {...messages.backButton} />
                 </button>
             </div>
             }

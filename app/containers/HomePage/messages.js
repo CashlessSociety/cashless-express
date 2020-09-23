@@ -19,6 +19,10 @@ export default defineMessages({
     id: `${scope}.publishButton`,
     defaultMessage: 'publish',
   },
+  backButton: {
+    id: `${scope}.backButton`,
+    defaultMessage: 'back',
+  },
   promiseHeader: {
     id: `${scope}.promiseHeader`,
     defaultMessage: 'Encode a promise',
