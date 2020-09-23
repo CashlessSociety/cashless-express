@@ -163,10 +163,12 @@ const typeDefs = gql`
     type Query {
         promises(id: ID!): [PromiseMessage]
         allPromises: [PromiseMessage]
+        promise(claimName: ID!): [PromiseMessage]
         messages(id: ID!): [Message]
         feed(id: ID!): Feed
         allIdMsgs: [IdentityMessage]
         pendingPromises(id: ID!): [PromiseMessage]
+        allFeedIds: [ID]
     }
 `;
 

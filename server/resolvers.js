@@ -27,17 +27,21 @@ module.exports = {
         }
     },
     Query: {
-        promises: (_, { id }, {dataSources}) =>
-            dataSources.ssbFlumeAPI.getPromisesByFeedId({ feedId: id }),
         allPromises: (_, __, {dataSources}) =>
             dataSources.ssbFlumeAPI.getAllPromises(),
+        promises: (_, { id }, {dataSources}) =>
+            dataSources.ssbFlumeAPI.getPromisesByFeedId({ feedId: id }),
+        pendingPromises: (_, { id }, {dataSources}) =>
+            dataSources.ssbFlumeAPI.getPendingPromisesByFeedId({ feedId: id }),
+        promise: (_, { claimName }, {dataSources})  => 
+            dataSources.ssbFlumeAPI.getPromise({ claimName: claimName }),
         messages: (_, { id }, { dataSources }) =>
             dataSources.ssbFlumeAPI.getFeedMessages({ feedId: id }),
         feed: (_, { id }, { dataSources }) =>
             dataSources.ssbFlumeAPI.getFeed({ feedId: id }),
         allIdMsgs: (_, __, {dataSources}) =>
             dataSources.ssbFlumeAPI.getAllIdMsgs(),
-        pendingPromises: (_, { id }, {dataSources}) =>
-            dataSources.ssbFlumeAPI.getPendingPromisesByFeedId({ feedId: id }),
+        allFeedIds: (_, __, {dataSources}) =>
+            dataSources.ssbFlumeAPI.getFeedIds(),
     }
   };

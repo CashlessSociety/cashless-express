@@ -111,26 +111,28 @@ class ssbFlumeAPI extends DataSource {
       let idMsgs = await this.getIdMsgsByFeedId({ feedId });
       let accounts = [];
       for (let j=0; j<idMsgs.length; j++) {
-          if (idMsgs[j].name.type == "COMMON" && cseq<idMsgs[j].sequence) {
-            commonName = idMsgs[j].name;
-            cseq = idMsgs.sequence;
-          }
-          if (idMsgs[j].name.type == "RESERVES" && (reserves==null || rseq>idMsgs[j].sequence)) {
-            reserves = idMsgs[j].name;
-            rseq = idMsgs[j].sequence;
-          }
-          if (idMsgs[j].name.type == "ACCOUNT") {
-            // NOTE assumes the pub on this server is the "trusted" feed publishing identity links aftter firebase auth
-            let msgs = this.getFeedMessages(ssb.client().id);
-            for (let k=0; k<msgs.length; k++) {
-                if (msgs[k].id == idMsgs[j].name.evidence.id && msgs[k].type=="IDENTITY") {
-                    if (msgs[k].feed.id==feedId && msgs[k].name.type=="ACCOUNT" && msg.name.handle==idMsgs[j].name.handle) {
-                        accounts.push(idMsgs[j].name);
+        if (idMsgs[j].feed.id == feedId) {
+            if (idMsgs[j].name.type == "COMMON" && cseq<idMsgs[j].sequence) {
+                commonName = idMsgs[j].name;
+                cseq = idMsgs.sequence;
+            }
+            if (idMsgs[j].name.type == "RESERVES" && (reserves==null || rseq>idMsgs[j].sequence)) {
+                reserves = idMsgs[j].name;
+                rseq = idMsgs[j].sequence;
+            }
+            if (idMsgs[j].name.type == "ACCOUNT") {
+                // NOTE assumes the pub on this server is the "trusted" feed publishing identity links aftter firebase auth
+                let msgs = await this.getIdMsgsByFeedId({feedId: ssb.client().id});
+                for (let k=0; k<msgs.length; k++) {
+                    if (msgs[k].id == idMsgs[j].name.evidence.id) {
+                        if (msgs[k].feed.id==feedId && msgs[k].name.type=="ACCOUNT" && msg.name.handle==idMsgs[j].name.handle) {
+                            accounts.push(idMsgs[j].name);
+                        }
+                        break
                     }
-                    break
                 }
             }
-          }
+        }
       }
       let allPromises = await this.getAllPromises();
       let liabilities = [];
@@ -146,28 +148,17 @@ class ssbFlumeAPI extends DataSource {
             assets.push(promises[n]);
           }
       }
+      let feedMsgs = await this.getFeedMessages({ feedId });
       return {
           id: feedId,
           publicKey: feedId.substring(1, feedId.length),
-          messages: this.getFeedMessages({ feedId }),
+          messages: feedMsgs,
           assets: promises,
           verifiedAccounts: accounts,
           reserves: reserves,
           commonName: commonName,
           liabilities: liabilities,
       }
-  }
-
-  async getFeedIds() {
-      console.log("LOG THIS");
-      let allIdMsgs = this.getAllIdMsgs();
-      console.log(allIdMsgs);
-      let allIds = [];
-      for (let i=0; i<allIdMsgs.length; i++) {
-        allIds.push(allIdMsgs[i].author.id);
-      }
-      let ids = new Set(allIds);
-      return [...ids];
   }
 
   async getIdMsgsByFeedId({ feedId }) {
@@ -220,7 +211,7 @@ class ssbFlumeAPI extends DataSource {
   }
 
   async getPendingPromisesByFeedId({ feedId }) {
-    let promises = this.getPromisesByFeedId({ feedId });
+    let promises = await this.getPromisesByFeedId({ feedId });
     let output = [];
     for (let i=0; i<promises.length; i++) {
         if (promises[i].isLatest && promises[i].nonce==0) {
@@ -268,35 +259,12 @@ class ssbFlumeAPI extends DataSource {
   }
 
   async getAllPromises() {
-    const myQuery = [{
-        "$filter": {
-        value: {
-            content: {
-                type: "cashless/promise",
-                header: {version: this.version, network: this.network},
-            }
-        }
-      }
-    }];
     try {
-        let results = await streamPull(
-            this.ssb.client().query.read({
-                query: myQuery,
-            })
-        );
-        let promises = results.map(result => this.promiseReducer(result));
-        // TODO: this can be done more efficiently/elegantly
-        for (let i=0; i<promises.length; i++) {
-            let isLatest = true;
-            let checkId = promises[i].author.id;
-            let checkPromises = this.getPromisesByFeedId({ checkId });
-            for (let j=0; j<checkPromises.length; j++) {
-                if (checkPromises[j].claimName==promises[i].claimName && checkPromises[j].nonce>promises[i].nonce) {
-                    isLatest = false;
-                    break
-                }
-            }
-            promises[i].isLatest = isLatest;
+        let ids = await this.getFeedIds();
+        let promises = [];
+        for (let i=0; i<ids.length; i++) {
+            let feedPromises = await this.getPromisesByFeedId({feedId: ids[i]});
+            promises.push(...feedPromises);
         }
         return promises;
     } catch(e) {
@@ -305,11 +273,15 @@ class ssbFlumeAPI extends DataSource {
     }
   }
 
-  async getFeedMessages({ feedId }) {
+  async getPromise({ claimName }) {
     const myQuery = [{
         "$filter": {
         value: {
-            author: feedId,
+            content: {
+                promise: {
+                    claimName: claimName
+                }
+            }
         }
       }
     }];
@@ -319,7 +291,63 @@ class ssbFlumeAPI extends DataSource {
                 query: myQuery,
             })
         );
-        return results.map(result => {if (result.value.content.type=="cashless/promise") {this.promiseReducer(result)} else if (result.value.content.type=="cashless/identity") {this.identityReducer(result)} else {this.genericReducer(result)}});
+        let promises = results.map(result=> this.promiseReducer(result));
+        let highest = 0;
+        for (let i=0; i<promises.length; i++) {
+            if (promises[i].nonce > highest) {
+                highest = promises.nonce
+            }
+        }
+        for (let j=0; j<promises.length; j++) {
+            if (promises[j].nonce<highest) {
+                promises[j].isLatest = false;
+            } else {
+                promises[j].isLatest = true;
+            }
+        }
+        return promises;
+    } catch(e) {
+        console.log("ERROR QUERYING FLUME DB:", e);
+        return [];
+    }
+  }
+
+  async getFeedIds() {
+      let msgs = await this.getAllIdMsgs();
+      let allIds = new Set(msgs.map(msg => msg.author.id));
+      return [...allIds];
+  }
+
+  async getFeedMessages({ feedId }) {
+    const myQuery = [{
+        "$filter": {
+        value: {
+            author: feedId
+        }
+      }
+    }];
+    try {
+        let results = await streamPull(
+            this.ssb.client().query.read({
+                query: myQuery,
+            })
+        );
+        let promises = await this.getPromisesByFeedId({ feedId });
+        let promiseDict = {};
+        for (let j=0; j<promises.length; j++) {
+            promiseDict[promises[j].id] = promises[j];
+        }
+        let output = [];
+        for (let i=0; i<results.length; i++) {
+            if (results[i].value.content.type=="cashless/promise") {
+                output.push(promiseDict[results[i].key]);
+            } else if (results[i].value.content.type=="cashless/identity") {
+                output.push(this.identityReducer(results[i]));
+            } else {
+                output.push(this.genericReducer(results[i]));
+            }
+        }
+        return output;
     } catch(e) {
         console.log("ERROR QUERYING FLUME DB:", e);
         return [];
