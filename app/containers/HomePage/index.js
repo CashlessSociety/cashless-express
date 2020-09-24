@@ -28,6 +28,13 @@ const randomHash = () => {
   return hash.digest();
 }
 
+const uuid = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
 const now = () => {
     return Math.floor(Date.now() / 1000);
 }
@@ -51,14 +58,18 @@ export default function HomePage() {
   const [keyfile, setKeyfile] = useState(null);
   const [myFeed, setMyFeed] = useState(null);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [sendToEmail, setSendToEmail] = useState(false);
+
   const [queryId, setQueryId] = useState("@");
   const [queryEmail, setQueryEmail] = useState("@gmail.com");
   const [promiseAmount, setAmount] = useState("0.00");
   const [queryFeed, setQueryFeed] = useState(null);
   const [publishResponse, setPublishResponse] = useState("publish a promise!");
+
+  const [sendToEmail, setSendToEmail] = useState(false);
   const [seeAssets, setSeeAssets] = useState(false);
+  const [changeName, setChangeName] = useState(false);
   const [seeLiabilities, setSeeLiabilities] = useState(false);
+  const [newName, setNewName] = useState("");
 
   const newKey = () => {
     let key = ssbKeys.generate("ed25519", randomHash());
@@ -142,12 +153,15 @@ export default function HomePage() {
         let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
         if (r.data.data.feed != null && r.data.data.feed.reserves != null) {
             setMyFeed(r.data.data.feed);
-            return true
+            if (r.data.data.feed.commonName != null) {
+                setNewName(r.data.data.feed.commonName.name);
+            }
+            return true;
         }
-        return false
+        return false;
     } catch(e) {
         console.log('could not find feed:', e.message);
-        return false
+        return false;
     }
   }
 
@@ -223,6 +237,28 @@ export default function HomePage() {
     setQueryFeed(null);
   }
 
+  const handleNewName = evt => {
+      setNewName(evt.target.value);
+  }
+
+  const handleChangeName = _evt => {
+      setChangeName(true);
+  }
+
+  const handleSubmitName = async _evt => {
+    let idmsg = {feed: {id: keyfile.id}, name: {type:"COMMON", name: newName, id:uuid()}, type: "cashless/identity", header: {version: version, network: network}, evidence:null};
+    try {
+        let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg}, {});
+        if (r.data.status=="ok") {
+            console.log('reset name!');
+            setChangeName(false);
+            await getMyFeed(keyfile.id);
+        }
+    } catch(e) {
+        console.log('error changing name:', e.message);
+    }
+  }
+
   const handleSendToEmail = _evt => {
       setSendToEmail(true);
   }
@@ -276,15 +312,15 @@ export default function HomePage() {
     let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise}, {});
     if (res.data.status=="ok") {
         if (!sendToEmail) {
-            setPublishResponse("published!");
+            setPublishResponse("published promise!");
         } else {
-            setPublishResponse("published promise to: "+queryEmail+" (must authenticate with email to claim)");
+            setPublishResponse("published promise (to: '"+queryEmail+"')");
         }
         setQueryId("@");
         setQueryFeed(null);
         setAmount("0.00");
         setQueryEmail("@gmail.com");
-        let ok = await getMyFeed(keyfile.id);
+        await getMyFeed(keyfile.id);
     }
   }
 
@@ -329,7 +365,17 @@ export default function HomePage() {
             <h1><FormattedMessage {...messages.titleBanner} /></h1>
             <br></br><br></br>
             <div className="center">
-                {myFeed.commonName==null ? <p><FormattedMessage {...messages.nameHeader} />: <FormattedMessage {...messages.unknown} /></p>:<p><FormattedMessage {...messages.nameHeader} />: {myFeed.commonName.name}</p>}
+                {changeName==false ?
+                <p><FormattedMessage {...messages.nameHeader} />:&nbsp;
+                    {myFeed.commonName==null ? <span><FormattedMessage {...messages.unknown} /></span>:<span>{myFeed.commonName.name}</span>}
+                    &nbsp;&nbsp;<a className="oldLink" onClick={handleChangeName}>change name</a>
+                </p>
+                :
+                <p>
+                    <FormattedMessage {...messages.nameHeader} />:&nbsp;&nbsp;<input type="text" className="textField" value={newName} onChange={handleNewName}/>
+                    &nbsp;&nbsp;<a className="oldLink" onClick={handleSubmitName}>submit</a>
+                </p>
+                }
                 <p>
                     <FormattedMessage {...messages.idHeader} />: {keyfile.id}
                 </p>

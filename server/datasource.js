@@ -114,7 +114,7 @@ class ssbFlumeAPI extends DataSource {
         if (idMsgs[j].feed.id == feedId) {
             if (idMsgs[j].name.type == "COMMON" && cseq<idMsgs[j].sequence) {
                 commonName = idMsgs[j].name;
-                cseq = idMsgs.sequence;
+                cseq = idMsgs[j].sequence;
             }
             if (idMsgs[j].name.type == "RESERVES" && (reserves==null || rseq>idMsgs[j].sequence)) {
                 reserves = idMsgs[j].name;

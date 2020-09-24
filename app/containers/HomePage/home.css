@@ -105,3 +105,7 @@ h1 {
 .oldLink:hover {
     cursor: pointer;
 }
+
+.oldLink:active {
+    color: #383891;
+}
