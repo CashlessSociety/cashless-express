@@ -3,29 +3,13 @@ import { defineMessages } from 'react-intl';
 export const scope = 'boilerplate.containers.HomePage';
 
 export default defineMessages({
-  joinButton: {
-    id: `${scope}.joinButton`,
-    defaultMessage: 'join',
-  },
-  loginButton: {
-    id: `${scope}.loginButton`,
-    defaultMessage: 'login',
-  },
-  downloadButton: {
-    id: `${scope}.downloadButton`,
-    defaultMessage: 'download',
+  walletHeader: {
+    id: `${scope}.walletHeader`,
+    defaultMessage: 'Wallet',
   },
   publishButton: {
     id: `${scope}.publishButton`,
     defaultMessage: 'promise',
-  },
-  backButton: {
-    id: `${scope}.backButton`,
-    defaultMessage: 'back',
-  },
-  promiseHeader: {
-    id: `${scope}.promiseHeader`,
-    defaultMessage: 'Encode a promise',
   },
   idInput: {
     id: `${scope}.idInput`,

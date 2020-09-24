@@ -33,6 +33,28 @@
     text-align: center;
 }
 
+.borderedDiv {
+    border: 0.2em solid;
+    border-color: black;
+    border-radius: 0.4em;
+    padding-left: 1.2em;
+    margin-top: 3em;
+    width: 45em;
+    margin-bottom: 2em;
+}
+
+.bold {
+    font-weight: bolder;
+}
+
+.under {
+    text-decoration-line: underline;
+}
+
+.italic {
+    font-style: italic;
+}
+
 button {
   background-color:  transparent;
   color: black;
@@ -46,7 +68,70 @@ button {
   outline:none;
 }
 
+button.mini {
+    background-color:  black;
+    color: white;
+    border-radius: 0.9em;
+    line-height:1.5em;
+    font-size:0.8em;
+    outline:none;
+    margin-left: 0.3em;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    margin-top: 0;
+    margin-bottom: 0;
+    width: auto;
+}
+
 button:hover {
     cursor:pointer;
     transform: scale(1.2);
+}
+
+p {
+    font-size: 1.3em;
+    line-height: 1.5em;
+}
+
+h1 {
+    text-align: center;
+}
+
+.textField {
+    outline: none;
+    box-shadow: none;
+    border-radius: 0.6em;
+    border-style: 0.1em solid;
+    border-color: black;
+    background-color: transparent;
+}
+
+.textField:focus {
+    background-color: lightblue;
+    outline: none;
+}
+
+.green {
+    color: green;
+}
+
+.red {
+    color: red;
+}
+
+.oldLink {
+    color: blue;
+    text-decoration: underline;
+}
+
+.oldLink:hover {
+    cursor: pointer;
+}
+
+.oldLink:active {
+    color: rgb(58, 58, 126);
+}
+
+.oldLink:visited {
+    color: rgb(58, 58, 126);
 }
