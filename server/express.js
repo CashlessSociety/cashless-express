@@ -149,8 +149,15 @@ app.use("/transactions", async (_req, res) => {
             claimName
             amount
             denomination
+            isLatest
+            nonce
             claim {
                 data
+                fromSignature {
+                    v
+                    r
+                    s
+                }
             }
         }}`;
       
@@ -318,139 +325,3 @@ if (process.env.HTTPS) {
 }
 
 module.exports = expressServer;
-
-/*
-const {
-  reconstructKeys,
-  uploadPicture,
-  isPhone,
-  ssbFolder,
-} = require("./lib/utils");
-
-const { filter } = require('lodash');
-const metrics = require("./lib/metrics");
-
-const cookieOptions = {
-  httpOnly: true,
-  signed: true,
-  expires: new Date(253402300000000), // Friday, 31 Dec 9999 23:59:59 GMT, nice date from stackoverflow
-  sameSite: "Lax",
-};
-
-const profileUrl = (id, path = "") => {
-  return `/profile/${id}${path}`;
-};
-
-app.use((req, res, next) => {
-  res.locals.profileUrl = profileUrl;
-  res.locals.imageUrl = (imageHash) => {
-    return imageHash && `/blob/${encodeURIComponent(imageHash)}`;
-  };
-  res.locals.profileImageUrl = (profile) => {
-    if (profile.image) {
-      return res.locals.imageUrl(profile.image);
-    }
-    return "/images/no-avatar.png";
-  };
-
-  const BLOB_PATTERN = /(&.*?=\.sha\d+)/g;
-  res.locals.topicTitle = (post) => {
-    const title = res.locals
-      .escapeMarkdown(post.content.title || post.content.text)
-      .replace(BLOB_PATTERN, "");
-    if (title.length > 60) {
-      return title.substr(0, 60) + "...";
-    }
-    return title;
-  };
-  res.locals.escapeMarkdown = (str) => {
-    let result = str;
-    result = result.replace(/!\[.*?\]\((.*?)\)/g, `$1`); // Images
-    result = result.replace(/\[(@.*?)\]\(@.*?\)/g, `$1`); // Link to mention
-    result = result.replace(/\[.*?\]\((.*?)\)/g, `$1`); // Any Link
-    result = result.replace(/^#+ /gm, "");
-    return result;
-  };
-  res.locals.htmlify = (str) => {
-    let result = ejsUtils.escapeXML(str);
-    let target = 'target="_blank"';
-    if (isPhone(req)) {
-      target = "";
-    }
-    result = result.replace(
-      /(\s|^)&amp;(\S*?=\.sha\d+)/g, // Blobs
-      `$1<a ${target} href="/blob/&$2">&$2</a>`
-    );
-    result = result.replace(
-      /(https?:\/\/\S+)/g, // Urls with http in front
-      `<a ${target} href="$1">$1</a>`
-    );
-    result = result.replace(
-      /(\s|^)(([a-z-_])*(\.[^\s.]{2,})+)/gm, // Domains without http
-      `$1<a ${target} href="http://$2">$2</a>`
-    );
-    result = result.replace(
-      /(\s|^)#([a-z0-9-]+)/g, // Communities
-      `$1<a href="/communities/$2">#$2</a>`
-    );
-    result = result.replace(/\n/g, "<br />");
-    return result;
-  };
-  res.locals.splittedPosts = (post, limit) => {
-    let text = res.locals.escapeMarkdown(post.content.text);
-
-    if (text.length <= limit) {
-      return [text];
-    }
-
-    let splittedPosts = [];
-    let words = text.split(" ");
-    let nextPost = "";
-    for (let word of words) {
-      const postsCount = splittedPosts.length + 1;
-      const pageMarker = `${postsCount}/`;
-
-      if (nextPost.length + word.length + pageMarker.length + 1 < limit) {
-        nextPost += word + " ";
-      } else {
-        if (nextPost.length > 0) {
-          splittedPosts.push(nextPost + pageMarker);
-        }
-        nextPost = word + " ";
-      }
-    }
-    const postsCount = splittedPosts.length + 1;
-    const lastMarker = postsCount > 1 ? `${postsCount}/${postsCount}` : "";
-    splittedPosts.push(nextPost + lastMarker);
-
-    return splittedPosts.reverse();
-  };
-  res.locals.timeSince = (date) => {
-    const seconds = Math.floor((Date.now() - date) / 1000);
-    let interval = Math.floor(seconds / 31536000);
-
-    interval = Math.floor(seconds / 2592000);
-    if (interval > 1) {
-      const dateTimeFormat = new Intl.DateTimeFormat("en", {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-      });
-      return dateTimeFormat.format(new Date(date));
-    }
-    interval = Math.floor(seconds / 86400);
-    if (interval > 1) return interval + " days ago";
-    interval = Math.floor(seconds / 3600);
-    if (interval > 1) return interval + " hours ago";
-    interval = Math.floor(seconds / 60);
-    if (interval > 1) return interval + " minutes ago";
-    return "just now";
-  };
-  res.locals.getBranchKey = (post) => {
-    let branch = post.value.content.branch;
-    let branchKey = typeof branch == "string" ? branch : branch[0];
-    return branchKey;
-  };
-
-  next();
-});*/

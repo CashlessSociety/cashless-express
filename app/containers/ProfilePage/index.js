@@ -76,7 +76,6 @@ export default function ProfilePage(props) {
   const [sendToEmail, setSendToEmail] = useState(false);
   const [changeName, setChangeName] = useState(false);
   const [newName, setNewName] = useState("");
-  const [showAddress, setShowAddress] = useState(false);
 
   const getMyFeed = async (feedId) => {
     const query = `query { feed(id:"`+feedId+`") {
@@ -195,8 +194,8 @@ export default function ProfilePage(props) {
       setQueryEmail(evt.target.value);
   }
 
-  const handleShowAddress = _evt => {
-      setShowAddress(true);
+  const handleGoWallet = _evt => {
+    props.history.push({pathname:'/wallet', state: {key: keyfile}});
   }
 
   const handleCancel = _evt => {
@@ -242,7 +241,10 @@ export default function ProfilePage(props) {
     }
     let promise = {type: "cashless/promise", header: {version: 1.0, network: network}};
     let claimName = bufferToHex(randomHash());
-    let issueTime = now();
+    // !!!
+    // NOTE: backdating promises by 60 days so settlements can happen immediately
+    // !!!
+    let issueTime = now()-(61*86400);
     let vestTime = issueTime+(60*86400);
     let voidTime = issueTime+(500*86400);
     promise.from = {id: keyfile.id, commonName: myFeed.commonName, reserves: {address: keyfile.eth.address}};
@@ -254,7 +256,10 @@ export default function ProfilePage(props) {
             setPublishResponse("cannot promise to yourself");
             return
         }
-        let disputeDuration = 2*86400;
+        // !!!
+        // NOTE: dispute period at 0 so settlements can happen immediately
+        // !!!
+        let disputeDuration = 0;
         let claimData = cashless.encodeClaim(promiseAmount, disputeDuration, vestTime, voidTime, keyfile.eth.address, queryFeed.reserves.address, claimName, emptyHash, 1);
         let contract = cashless.contract(providerURL, keyfile.eth.private);
         let libContract = cashless.libContract(providerURL);
@@ -312,8 +317,7 @@ export default function ProfilePage(props) {
                     <span className="bold under"><FormattedMessage {...messages.idHeader} /></span>: {keyfile.id}
                 </p>
                 <p>
-                    <span className="bold under"><FormattedMessage {...messages.walletHeader} /></span>: {'$'+myReserves.toFixed(2).toString()} {showAddress ? <span>({keyfile.eth.address})</span>: <span>&nbsp;<button className="mini" onClick={handleShowAddress}>show address</button></span>}
-                    &nbsp;<Link className="oldLink" to="/wallet" keyfile={keyfile}>go to cashier</Link>
+                    <span className="bold under"><FormattedMessage {...messages.reservesHeader} /></span>: {'$'+myReserves.toFixed(2).toString()} <span>&nbsp;<button className="mini" onClick={handleGoWallet}>go to Wallet</button></span>
                 </p>
                 <p>
                     <span className="bold under"><FormattedMessage {...messages.incomingHeader} /></span>: <span className="green">{'$'+getGrossAmount(myFeed.assets).toFixed(2).toString()}&nbsp;&nbsp; <Link className="oldLink" to="/myAssets" promises={myFeed.assets} keyfile={keyfile}>see all</Link></span>

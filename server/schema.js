@@ -88,6 +88,24 @@ const typeDefs = gql`
         evidence: Evidence
     }
 
+    type CompleteSettlementMessage implements Message {
+        id: ID!
+        type: MsgType!
+        header: Header
+        previous: String
+        hash: HashFunc
+        author: Feed
+        sequence: Int
+        timestamp: Date
+        signature: String
+        amount: Float
+        denomination: Denomination
+        claimName: ID
+        claim: ReservesClaim
+        tx: ID
+        confirmed: Boolean
+    }
+
     type GenericMessage implements Message {
         id: ID!
         type: MsgType!
@@ -108,6 +126,8 @@ const typeDefs = gql`
     type MessageEvidence implements Evidence {
         type: EvidenceType!
         id: ID
+        feedId: ID
+        sequence: Int
     }
 
     type ReservesClaim {

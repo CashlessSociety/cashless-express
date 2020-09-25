@@ -14,6 +14,7 @@ import AdminPage from 'containers/AdminPage/Loadable';
 import NotFoundPage from 'containers/NotFoundPage/Loadable';
 import HomePage from 'containers/HomePage/Loadable';
 import ProfilePage from 'containers/ProfilePage/Loadable';
+import WalletPage from 'containers/WalletPage/Loadable';
 import Header from 'components/Header';
 //import Footer from 'components/Footer'; 
 import './app.css';
@@ -33,6 +34,7 @@ export default function App() {
             <Route exact path="/" component={HomePage} />
             <Route exact path="/profile" component={ProfilePage} />
             <Route exact path="/admin" component={AdminPage} />
+            <Route exact path="/wallet" component={WalletPage} />
             <Route path="" component={NotFoundPage} />
         </Switch>  
         </div>
