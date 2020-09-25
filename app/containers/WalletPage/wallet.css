@@ -23,35 +23,43 @@
     flex-direction: row;
 }
 
-.keyArea {
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.hiddenFile {
-    display: none;
-}
-
 .center {
     text-align: center;
+}
+
+.noBorder {
+    padding-top: 12em;
+    width: 25em;
+    height: auto;
+}
+
+.aboveBorder {
+    margin-bottom: 2em;
+    margin-left:0;
+    margin-right:0;
+    height: 20em;
 }
 
 .borderedDiv {
     border: 0.2em solid;
     border-color: black;
     border-radius: 0.4em;
-    padding-left: 1.2em;
-    margin-top: 3em;
     width: 45em;
+    margin-top: 3em;
+    padding-top: 3em;
     margin-bottom: 2em;
-    margin-left: 2em;
-    margin-right: 2em;
-    height: 20em;
+    margin-left:0;
+    margin-right:0;
+    height: 14em;
 }
 
 .halfwidth {
-    width: 30em;
+    width: 25em;
+}
+
+.arrow {
+    width: 95%;
+    background-color: transparent;
 }
 
 .bold {
@@ -145,4 +153,13 @@ h1 {
 
 .oldLink:visited {
     color: rgb(58, 58, 126);
+}
+
+h1 {
+    font-family: 'Courier Prime', monospace;
+}
+
+p {
+    font-family: 'Courier Prime', monospace;
+    text-align: center;
 }

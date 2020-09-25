@@ -5,7 +5,7 @@ import { FormattedMessage } from 'react-intl';
 import Img from './Img';
 import NavBar from './NavBar';
 //import HeaderLink from './HeaderLink';
-import Banner from './cashlessbanner.png';
+import Banner from 'images/cashlessbanner.png';
 //import messages from './messages';
 
 function Header() {
