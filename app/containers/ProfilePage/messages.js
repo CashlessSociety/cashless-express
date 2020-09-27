@@ -5,7 +5,7 @@ export const scope = 'boilerplate.containers.HomePage';
 export default defineMessages({
   reservesHeader: {
     id: `${scope}.reservesHeader`,
-    defaultMessage: 'Reserves',
+    defaultMessage: 'Reserve',
   },
   publishButton: {
     id: `${scope}.publishButton`,

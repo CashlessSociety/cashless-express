@@ -6,7 +6,7 @@ const abi = require('ethereumjs-abi');
 const ecsign = ethjsutil.ecsign;
 
 cashlessContractABI = () => { 
-    return [{"inputs": [{"internalType": "bytes32", "name": "salt", "type": "bytes32"}, {"internalType": "address", "name": "_tokenAddress", "type": "address"}], "stateMutability": "nonpayable", "type": "constructor"}, {"stateMutability": "nonpayable", "type": "fallback"}, {"inputs": [], "name": "DOMAIN_SEPARATOR", "outputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}], "name": "loops", "outputs": [{"internalType": "bytes32", "name": "proposalName", "type": "bytes32"}, {"internalType": "uint256", "name": "minFlow", "type": "uint256"}], "stateMutability": "view", "type": "function"}, {"inputs": [], "name": "minVestDuration", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "address", "name": "", "type": "address"}], "name": "reserves", "outputs": [{"internalType": "uint256", "name": "balance", "type": "uint256"}], "stateMutability": "view", "type": "function"}, {"inputs": [], "name": "tokenAddress", "outputs": [{"internalType": "address", "name": "", "type": "address"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "address", "name": "accountOwner", "type": "address"}, {"internalType": "uint256", "name": "amount", "type": "uint256"}], "name": "fundReserves", "outputs": [], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"}, {"internalType": "address", "name": "targetReceiver", "type": "address"}], "name": "withdrawReserves", "outputs": [], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "bytes", "name": "claimData", "type": "bytes"}, {"internalType": "uint8[2]", "name": "sigsV", "type": "uint8[2]"}, {"internalType": "bytes32[2]", "name": "sigsR", "type": "bytes32[2]"}, {"internalType": "bytes32[2]", "name": "sigsS", "type": "bytes32[2]"}], "name": "proposeSettlement", "outputs": [], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "bytes", "name": "claimData", "type": "bytes"}, {"internalType": "uint8[2]", "name": "sigsV", "type": "uint8[2]"}, {"internalType": "bytes32[2]", "name": "sigsR", "type": "bytes32[2]"}, {"internalType": "bytes32[2]", "name": "sigsS", "type": "bytes32[2]"}], "name": "disputeSettlement", "outputs": [], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "address", "name": "accountOwner", "type": "address"}, {"internalType": "bytes32", "name": "claimID", "type": "bytes32"}], "name": "redeemClaim", "outputs": [], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "proposalName", "type": "bytes32"}, {"internalType": "address[]", "name": "loop", "type": "address[]"}, {"internalType": "uint256", "name": "minFlow", "type": "uint256"}], "name": "proposeLoop", "outputs": [], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "loopID", "type": "bytes32"}, {"internalType": "bytes", "name": "encodedPriorClaim", "type": "bytes"}, {"internalType": "bytes", "name": "encodedClaim", "type": "bytes"}], "name": "commitLoopClaim", "outputs": [], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "bytes", "name": "claimData", "type": "bytes"}, {"internalType": "uint8", "name": "v", "type": "uint8"}, {"internalType": "bytes32", "name": "r", "type": "bytes32"}, {"internalType": "bytes32", "name": "s", "type": "bytes32"}, {"internalType": "bool", "name": "isOwner", "type": "bool"}], "name": "verifyClaimSig", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "address", "name": "accountOwner", "type": "address"}], "name": "getClaimIDs", "outputs": [{"internalType": "bytes32[]", "name": "", "type": "bytes32[]"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "address", "name": "accountOwner", "type": "address"}, {"internalType": "bytes32", "name": "claimID", "type": "bytes32"}, {"internalType": "uint256", "name": "index", "type": "uint256"}], "name": "getReservesClaim", "outputs": [{"internalType": "bytes", "name": "", "type": "bytes"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "address", "name": "accountOwner", "type": "address"}, {"internalType": "bytes32", "name": "claimID", "type": "bytes32"}], "name": "getReservesSettlement", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}, {"internalType": "uint256", "name": "", "type": "uint256"}, {"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "loopID", "type": "bytes32"}], "name": "getLoopStatus", "outputs": [{"internalType": "address[]", "name": "", "type": "address[]"}, {"internalType": "address[]", "name": "", "type": "address[]"}], "stateMutability": "view", "type": "function"}];
+    return [{"inputs": [{"internalType": "bytes32", "name": "salt", "type": "bytes32"}, {"internalType": "address", "name": "_redeemableTokenAddress", "type": "address"}], "stateMutability": "nonpayable", "type": "constructor"}, {"anonymous": false, "inputs": [{"indexed": true, "internalType": "address", "name": "owner", "type": "address"}, {"indexed": true, "internalType": "address", "name": "spender", "type": "address"}, {"indexed": false, "internalType": "uint256", "name": "value", "type": "uint256"}], "name": "Approval", "type": "event"}, {"anonymous": false, "inputs": [{"indexed": true, "internalType": "address", "name": "from", "type": "address"}, {"indexed": true, "internalType": "address", "name": "to", "type": "address"}, {"indexed": false, "internalType": "uint256", "name": "value", "type": "uint256"}], "name": "Transfer", "type": "event"}, {"stateMutability": "nonpayable", "type": "fallback"}, {"inputs": [], "name": "DOMAIN_SEPARATOR", "outputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}], "name": "loops", "outputs": [{"internalType": "bytes32", "name": "proposalName", "type": "bytes32"}, {"internalType": "uint256", "name": "minFlow", "type": "uint256"}], "stateMutability": "view", "type": "function"}, {"inputs": [], "name": "minVestDuration", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}, {"inputs": [], "name": "redeemableTokenAddress", "outputs": [{"internalType": "address", "name": "", "type": "address"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "address", "name": "collectingAccount", "type": "address"}, {"internalType": "uint256", "name": "amount", "type": "uint256"}], "name": "fund", "outputs": [], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"}, {"internalType": "address", "name": "targetReceiver", "type": "address"}], "name": "redeem", "outputs": [], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "bytes", "name": "claimData", "type": "bytes"}, {"internalType": "uint8[2]", "name": "sigsV", "type": "uint8[2]"}, {"internalType": "bytes32[2]", "name": "sigsR", "type": "bytes32[2]"}, {"internalType": "bytes32[2]", "name": "sigsS", "type": "bytes32[2]"}], "name": "proposeSettlement", "outputs": [], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "bytes", "name": "claimData", "type": "bytes"}, {"internalType": "uint8[2]", "name": "sigsV", "type": "uint8[2]"}, {"internalType": "bytes32[2]", "name": "sigsR", "type": "bytes32[2]"}, {"internalType": "bytes32[2]", "name": "sigsS", "type": "bytes32[2]"}], "name": "disputeSettlement", "outputs": [], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "address", "name": "accountOwner", "type": "address"}, {"internalType": "bytes32", "name": "claimID", "type": "bytes32"}], "name": "commitSettlement", "outputs": [], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "proposalName", "type": "bytes32"}, {"internalType": "address[]", "name": "loop", "type": "address[]"}, {"internalType": "uint256", "name": "minFlow", "type": "uint256"}], "name": "proposeLoop", "outputs": [], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "loopID", "type": "bytes32"}, {"internalType": "bytes", "name": "encodedPriorClaim", "type": "bytes"}, {"internalType": "bytes", "name": "encodedClaim", "type": "bytes"}], "name": "commitLoopClaim", "outputs": [], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "bytes", "name": "claimData", "type": "bytes"}, {"internalType": "uint8", "name": "v", "type": "uint8"}, {"internalType": "bytes32", "name": "r", "type": "bytes32"}, {"internalType": "bytes32", "name": "s", "type": "bytes32"}, {"internalType": "bool", "name": "isOwner", "type": "bool"}], "name": "verifyClaimSig", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "address", "name": "accountOwner", "type": "address"}], "name": "getClaimIDs", "outputs": [{"internalType": "bytes32[]", "name": "", "type": "bytes32[]"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "address", "name": "accountOwner", "type": "address"}, {"internalType": "bytes32", "name": "claimID", "type": "bytes32"}, {"internalType": "uint256", "name": "index", "type": "uint256"}], "name": "getClaim", "outputs": [{"internalType": "bytes", "name": "", "type": "bytes"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "address", "name": "accountOwner", "type": "address"}, {"internalType": "bytes32", "name": "claimID", "type": "bytes32"}], "name": "getSettlement", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}, {"internalType": "uint256", "name": "", "type": "uint256"}, {"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "loopID", "type": "bytes32"}], "name": "getLoopStatus", "outputs": [{"internalType": "address[]", "name": "", "type": "address[]"}, {"internalType": "address[]", "name": "", "type": "address[]"}], "stateMutability": "view", "type": "function"}, {"inputs": [], "name": "name", "outputs": [{"internalType": "string", "name": "", "type": "string"}], "stateMutability": "view", "type": "function"}, {"inputs": [], "name": "symbol", "outputs": [{"internalType": "string", "name": "", "type": "string"}], "stateMutability": "view", "type": "function"}, {"inputs": [], "name": "decimals", "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}], "stateMutability": "view", "type": "function"}, {"inputs": [], "name": "totalSupply", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "address", "name": "account", "type": "address"}], "name": "balanceOf", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "address", "name": "recipient", "type": "address"}, {"internalType": "uint256", "name": "amount", "type": "uint256"}], "name": "transfer", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "address", "name": "owner", "type": "address"}, {"internalType": "address", "name": "spender", "type": "address"}], "name": "allowance", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}, {"inputs": [{"internalType": "address", "name": "spender", "type": "address"}, {"internalType": "uint256", "name": "amount", "type": "uint256"}], "name": "approve", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "address", "name": "sender", "type": "address"}, {"internalType": "address", "name": "recipient", "type": "address"}, {"internalType": "uint256", "name": "amount", "type": "uint256"}], "name": "transferFrom", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "address", "name": "spender", "type": "address"}, {"internalType": "uint256", "name": "addedValue", "type": "uint256"}], "name": "increaseAllowance", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "nonpayable", "type": "function"}, {"inputs": [{"internalType": "address", "name": "spender", "type": "address"}, {"internalType": "uint256", "name": "subtractedValue", "type": "uint256"}], "name": "decreaseAllowance", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "nonpayable", "type": "function"}];
 }
 
 cashlessLibContractABI = () => {
@@ -22,7 +22,7 @@ cashlessAddress = network => {
 		return "";
 	}
 	if (network == "rinkeby") {
-		return "0x61319564Ac5e04E6462A5ccbc68c812450133E06";
+		return "0x9eb9659a77d071217918a6067174a25bCbe7eD5a";
 	}
 	if (network == "dev") {
 		return "0x20346Aebaacfa94B8dcd7F5cE3B7f25d3163C672";
@@ -35,7 +35,7 @@ cashlessLibAddress = network => {
 		return "";
 	}
 	if (network == "rinkeby") {
-		return "0xf7DCB21902deA7e2e6AD2E8842E9A01030c1aCF9";
+		return "0x0CCB150D61bF5B6E65667d10515B856574769b45";
 	}
 	if (network == "dev") {
 		return "0xb3869548879977C80564f0a42FF934F0cEf4BBC7";
@@ -43,12 +43,12 @@ cashlessLibAddress = network => {
 	console.log("error: unrecognized network:", network);
 }
 
-erc20Address = network => {
+stablecoinAddress = network => {
     if (network == "mainnet") {
         return "0x6B175474E89094C44Da98b954EedeAC495271d0F";
     }
     if (network == "rinkeby") {
-        return "0xDDcD99957A7992B7e4D32f3Ea662616a6702807E";
+        return "0xb4e232250DdDb7e6243A6f2416fEDE99da2D3A62";
     }
     if (network == "dev") {
         return "0xd4177A2Bd990DA8416f30C1D9A161CB2c9325F8b";
@@ -64,27 +64,30 @@ networkFromProviderURL = providerURL => {
 	}
 }
 
-exports.contract = (providerURL, privateKey) => {
+exports.wallet = (providerURL, privateKey) => {
+    let provider = new ethers.providers.JsonRpcProvider(providerURL);
+    return  new ethers.Wallet(privateKey, provider);
+}
+
+exports.contract = (providerURL, signer) => {
 	let provider = new ethers.providers.JsonRpcProvider(providerURL);
 	let contractABI = cashlessContractABI();
 	let contractAddress = cashlessAddress(networkFromProviderURL(providerURL));
 	let contract = new ethers.Contract(contractAddress, contractABI, provider);
-	if (privateKey != null) {
-		let wallet = new ethers.Wallet(privateKey, provider);
-		contract = contract.connect(wallet);
+	if (signer != null) {
+		contract = contract.connect(signer);
 	}
 
 	return contract;
 }
 
-exports.erc20Contract = (providerURL, privateKey) => {
+exports.stablecoinContract = (providerURL, signer) => {
 	let provider = new ethers.providers.JsonRpcProvider(providerURL);
     let contractABI = erc20ContractABI();
-    let contractAddress = erc20Address(networkFromProviderURL(providerURL));
+    let contractAddress = stablecoinAddress(networkFromProviderURL(providerURL));
 	let contract = new ethers.Contract(contractAddress, contractABI, provider);
-	if (privateKey != null) {
-		let wallet = new ethers.Wallet(privateKey, provider);
-		contract = contract.connect(wallet);
+	if (signer != null) {
+		contract = contract.connect(signer);
 	}
 
 	return contract;
@@ -158,9 +161,9 @@ exports.signClaim = async (cashless, cashlessLib, claimData) => {
 	}
 }
 
-exports.getReserves = async (cashless, address) => {
+exports.balanceOf = async (cashless, address) => {
 	try {
-		return await cashless.functions.reserves(address);
+		return await cashless.functions.balanceOf(address);
 	} catch(e) {
 		console.log("error getting reserves:", e.message);
 		return
@@ -177,7 +180,7 @@ exports.verifyClaimSig = async (cashless, claimData, sig, isSender) => {
 	}
 }
 
-exports.erc20TransferTx = async (erc20, receiverAddress, amount) => {
+exports.stablecoinTransferTx = async (erc20, receiverAddress, amount) => {
     let options = {gasLimit: 60000};
     let value = ethers.utils.parseEther(amount);
 	try {
@@ -190,13 +193,17 @@ exports.erc20TransferTx = async (erc20, receiverAddress, amount) => {
 	} 
 }
 
-exports.fundReservesTx = async (cashless, erc20, amount) => {
-    if (cashless.signer.address != erc20.signer.address) {
+exports.fundReservesTx = async (cashless, erc20, amount, fundingAddress) => {
+    let toFund = fundingAddress;
+    if (toFund==null){
+        toFund = await cashless.signer.getAddress();
+    }
+    if (await cashless.signer.getAddress() != await erc20.signer.getAddress()) {
         console.log('mismatching signers in fund tx');
         return
     }
     let value = ethers.utils.parseEther(amount);
-	let options = {gasLimit: 100000};
+	let options = {gasLimit: 120000};
 	try {
 		let tx1 = await erc20.functions.approve(cashless.address, value, options);
 		console.log("approve tx hash:", tx1.hash);
@@ -205,7 +212,7 @@ exports.fundReservesTx = async (cashless, erc20, amount) => {
 		return
 	}
 	try {
-		let tx = await cashless.functions.fundReserves(cashless.signer.address, value, options);
+		let tx = await cashless.functions.fund(toFund, value, options);
 		console.log("fund tx hash:", tx.hash);
 		return tx.hash;
 	} catch(e) {
@@ -214,10 +221,10 @@ exports.fundReservesTx = async (cashless, erc20, amount) => {
 	}
 }
 
-exports.withdrawReservesTx = async (cashless, amount, receiverAddress) => {
+exports.redeemReservesTx = async (cashless, amount, receiverAddress) => {
 	let options = {gasLimit: 100000};
 	try {
-		let tx = await cashless.functions.withdrawReserves(ethers.utils.parseEther(amount), receiverAddress, options);
+		let tx = await cashless.functions.redeem(ethers.utils.parseEther(amount), receiverAddress, options);
 		console.log("withdraw tx hash:", tx.hash);
 		return tx.hash;
 	} catch(e) {
@@ -253,7 +260,7 @@ exports.disputeSettlementTx = async (cashless, claimData, sig1, sig2) => {
 exports.closeSettlementTx = async (cashless, claimingAddress, claimID) => {
 	let options = {gasLimit: 800000};
 	try {
-		var tx = await cashless.functions.redeemClaim(claimingAddress, claimID, options);
+		var tx = await cashless.functions.commitSettlement(claimingAddress, claimID, options);
 		console.log("close settlement tx hash:", tx.hash);
 		return tx.hash;
 	} catch(e) {
@@ -291,3 +298,21 @@ exports.hashString = str => {
 	hash.update(str);
 	return hash.digest();
 }
+
+exports.bufferToHex = (buffer) => {
+    let result = [...new Uint8Array (buffer)]
+        .map (b => b.toString (16).padStart (2, "0"))
+        .join ("");
+    return "0x"+result;
+}
+  
+exports.randomHash = () => {
+    let bytes = crypto.randomBytes(256);
+    let hash = crypto.createHash('sha256');
+    hash.update(bytes);
+    return hash.digest();
+}
+  
+exports.network = "rinkeby";
+exports.version = 1.0;
+exports.infuraAPIKey = "fef5fecf13fb489387683541edfbd958"; // TODO: come from env.

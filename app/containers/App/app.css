@@ -4,7 +4,9 @@
     position: absolute;
     min-width: 100%;
     min-height:100%;
+    font-family: 'Courier Prime', monospace;
 }
+
 .top_lvl {
     max-width: calc(768px + 16px * 2);
     margin: 0 auto;
@@ -13,6 +15,179 @@
     padding: 0 16px;
     flex-direction: column;
     font-size: 12px;
+}
+
+.outerDiv{
+    display: flex;
+    font-family: 'Courier Prime', monospace;
+    flex-direction: column;
+    margin-left: 5em;
+}
+
+.keyArea {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.hiddenFile {
+    display: none;
+}
+
+.center {
+    text-align: center;
+}
+
+.row {
+    flex-direction: row;
+}
+
+.column {
+    flex-direction: column;
+}
+
+.borderedDiv {
+    border: 0.2em solid;
+    border-color: black;
+    border-radius: 0.4em;
+    padding-left: 1.2em;
+    margin-top: 3em;
+    width: 45em;
+    margin-bottom: 2em;
+}
+
+.halfwidth {
+    width: 35em;
+}
+
+
+.wallet {
+    margin-left: 14em;
+}
+
+.arrow {
+    width: 95%;
+    background-color: transparent;
+}
+
+.bold {
+    font-weight: bolder;
+}
+
+.under {
+    text-decoration-line: underline;
+}
+
+.italic {
+    font-style: italic;
+}
+
+button {
+  background-color:  transparent;
+  color: black;
+  border: 0.1em solid;
+  border-color: black;
+  border-radius: 0.4em;
+  line-height: 4em;
+  width: 10em;
+  margin: 1em;
+  font-size: 1.5em;
+  outline:none;
+}
+
+.shortWidth {
+    width: 8em;
+    margin: 0.5em;
+    line-height: 3em;
+}
+
+button.mini {
+    background-color:  black;
+    color: white;
+    border-radius: 0.9em;
+    line-height:1.5em;
+    font-size:0.8em;
+    outline:none;
+    margin-left: 0.3em;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    margin-top: 0;
+    margin-bottom: 0;
+    width: auto;
+}
+
+button.extralong {
+    width: 15em;
+}
+
+button:hover {
+    cursor:pointer;
+    transform: scale(1.2);
+}
+
+p {
+    font-size: 1.3em;
+    line-height: 1.5em;
+}
+
+h1 {
+    text-align: center;
+}
+
+.marginRight {
+    margin-right: 10em;
+}
+
+.textField {
+    outline: none;
+    box-shadow: none;
+    border-radius: 0.6em;
+    border-style: 0.1em solid;
+    border-color: black;
+    background-color: transparent;
+}
+
+.textField:focus {
+    background-color: lightblue;
+    outline: none;
+}
+
+.green {
+    color: green;
+}
+
+.red {
+    color: red;
+}
+
+.oldLink {
+    color: blue;
+    text-decoration: underline;
+}
+
+.oldLink:hover {
+    cursor: pointer;
+}
+
+.oldLink:active {
+    color: rgb(58, 58, 126);
+}
+
+.oldLink:visited {
+    color: rgb(58, 58, 126);
+}
+
+.arrowBox {
+    padding-top: 10em;
+    width: auto;
+    height: auto;
+}
+
+.aboveBorder {
+    margin-bottom: 2em;
+    margin-left:0;
+    margin-right:0;
+    height: 20em;
 }
 
 /*@media only screen and (max-height: 730px) {

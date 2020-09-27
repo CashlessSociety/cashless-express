@@ -6,38 +6,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import axios from 'axios';
-import * as crypto from 'crypto';
 import * as ethers from 'ethers';
 import * as cashless from 'containers/App/cashless';
 import { useInterval } from 'containers/AdminPage/interval';
-import { FormattedMessage } from 'react-intl';
-import messages from './messages';
-import LeftArrow from 'images/leftarrow.png';
-import RightArrow from 'images/rightarrow.png';
-import Img from 'components/Img';
-import './wallet.css';
+import 'containers/App/app.css';
 
-const bufferToHex = (buffer) => {
-  let result = [...new Uint8Array (buffer)]
-      .map (b => b.toString (16).padStart (2, "0"))
-      .join ("");
-  return "0x"+result
-}
-
-const randomHash = () => {
-  let bytes = crypto.randomBytes(256);
-  let hash = crypto.createHash('sha256');
-  hash.update(bytes);
-  return hash.digest();
-}
-
-const now = () => {
-    return Math.floor(Date.now() / 1000);
-}
-
-const network = "rinkeby";
-const providerURL = "https://"+network+".infura.io/v3/fef5fecf13fb489387683541edfbd958";
+const providerURL = "https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey;
 
 const toEth = (num) => {
     return num/ethers.utils.parseEther("1");
@@ -49,14 +23,16 @@ const fromEth = (num) => {
 
 export default function WalletPage(props) {
   const [loaded, setLoaded] = useState(false);
-  const [keyfile, setKeyfile] = useState(null);
+  const [key, setKey] = useState(null);
+  const [signer, setSigner] = useState(null);
   const [myReserves, setMyReserves] = useState(0.0);
   const [myWalletEth, setMyWalletEth] = useState(0.0);
   const [myWalletDai, setMyWalletDai] = useState(0.0);
   const [daiContract, setDaiContract] = useState(null);
   const [contract, setContract] = useState(null);
+  const [transactSwitch, setTransactSwitch] = useState(null);
   const [isTransacting, setIsTransacting] = useState(false);
-  const [switchWithdraw, setSwitchWithdraw] = useState(false);
+  const [isMetamask, setIsMetamask] = useState(false);
   const [queryAmt, setQueryAmt] = useState("0.00");
   const [lastTxId, setLastTxId] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -64,22 +40,30 @@ export default function WalletPage(props) {
   const loadKey = async () => {
     if (!loaded) {
         if (props.location.state!=null && props.location.state.key!=null) {
-            console.log("got here!");
-            setKeyfile(props.location.state.key);
-            console.log(props.location.state.key.eth);
-            let myDaiContract = cashless.erc20Contract(providerURL, props.location.state.key.eth.private);
-            let myContract = cashless.contract(providerURL, props.location.state.key.eth.private);
-            console.log(myDaiContract);
+            setKey(props.location.state.key);
+            let mySigner;
+            if (props.location.state.key.private != null) {
+                mySigner = cashless.wallet(providerURL, props.location.state.key.private);
+            } else {
+                await window.ethereum.enable();
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                mySigner = provider.getSigner();
+                setIsMetamask(true);
+                setTransactSwitch({fund: true});
+            }
+            setSigner(mySigner);
+            let myDaiContract = cashless.stablecoinContract(providerURL, mySigner);
+            let myContract = cashless.contract(providerURL, mySigner);
             let balEthWei = await myDaiContract.signer.getBalance();
-            let balDaiWei = await myDaiContract.functions.balanceOf(props.location.state.key.eth.address);
-            let reserves = await myContract.functions.reserves(myContract.signer.getAddress());
+            let balDaiWei = await myDaiContract.functions.balanceOf(props.location.state.key.address);
+            let reserve = await myContract.functions.balanceOf(props.location.state.key.address);
             setDaiContract(myDaiContract);
             setContract(myContract);
             let balEth = toEth(balEthWei);
             let balDai = toEth(balDaiWei);
             setMyWalletDai(balDai);
             setMyWalletEth(balEth);
-            setMyReserves(toEth(reserves["balance"]));
+            setMyReserves(toEth(reserve));
             setLoaded(true);
         } else {
             props.history.push({pathname: '/'});
@@ -87,21 +71,45 @@ export default function WalletPage(props) {
     }
   }
 
-  const handleSwitch = _evt => {
-      setSwitchWithdraw(!switchWithdraw);
-      setErrorMsg("");
-  }
-
   const handleQueryAmt = evt => {
       setQueryAmt(evt.target.value);
+  }
+
+  const handleChooseFund = _evt => {
+      let ts = {fund: true, withdraw: false};
+      setTransactSwitch(ts);
+  }
+
+  const handleChooseWithdraw= _evt => {
+    let ts = {fund: false, withdraw: true};
+    setTransactSwitch(ts);
+  }
+
+  const handleSwitch = _evt => {
+      setTransactSwitch({fund: !transactSwitch.fund});
+  }
+
+  const handleChooseMetamask = async _evt => {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    await signer.getAddress();
+    let ts = JSON.parse(JSON.stringify(transactSwitch));
+    ts.funder = "metamask";
+    setTransactSwitch(ts);
+  }
+
+  const handleChooseCashless = _evt => {
+    let ts = JSON.parse(JSON.stringify(transactSwitch));
+    ts.funder = "cashless";
+    setTransactSwitch(ts);
   }
 
   const handleTransact = async _evt => {
     let x = Number(queryAmt);
     let gp = await contract.signer.getGasPrice();
-    console.log("gas price:", gp);
+    setErrorMsg("sending...");
     if (x>0) {
-        if (switchWithdraw) {
+        if (transactSwitch.fund==false) {
             console.log('attempting withdraw');
             if (60000*gp > fromEth(myWalletEth)) {
                 setErrorMsg('Not enough ETH in wallet');
@@ -111,7 +119,7 @@ export default function WalletPage(props) {
                 setErrorMsg('Not enough DAI in reserves');
                 return
             }
-            let txh = await cashless.withdrawReservesTx(contract, queryAmt, contract.signer.getAddress());
+            let txh = await cashless.redeemReservesTx(contract, queryAmt, await contract.signer.getAddress());
             if (txh!=null) {
                 setLastTxId(txh);
                 setIsTransacting(true);
@@ -128,7 +136,64 @@ export default function WalletPage(props) {
                 setErrorMsg('Not enough DAI in wallet');
                 return
             }
+            console.log(await contract.signer.getAddress());
+            console.log(await daiContract.signer.getAddress());
+            console.log(queryAmt);
             let txh = await cashless.fundReservesTx(contract, daiContract, queryAmt);
+            if (txh!=null) {
+                setLastTxId(txh);
+                setIsTransacting(true);
+            } else {
+                setErrorMsg('Fund Transaction Failed');
+            }
+        }
+    } else {
+        setErrorMsg('must be a number greater than 0');
+    }
+  }
+
+  const handleTransactMetamask = async _evt => {
+    await window.ethereum.enable();
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    let x = Number(queryAmt);
+    let gp = await contract.signer.getGasPrice();
+    setErrorMsg("sending...");
+    if (x>0) {
+        if (transactSwitch.withdraw) {
+            console.log('attempting withdraw');
+            if (60000*gp > fromEth(myWalletEth)) {
+                setErrorMsg('Not enough ETH in wallet');
+                return
+            }
+            if (x>myReserves) {
+                setErrorMsg('Not enough USDC in reserves');
+                return
+            }
+            let txh = await cashless.redeemReservesTx(contract, queryAmt, await contract.signer.getAddress());
+            if (txh!=null) {
+                setLastTxId(txh);
+                setIsTransacting(true);
+            } else {
+                setErrorMsg('Withdraw Transaction Failed');
+            }
+        } else {
+            console.log('attempting fund');
+            let ethAmt = await signer.getBalance();
+            if (120000*gp > ethAmt) {
+                setErrorMsg('Not enough ETH in wallet');
+                return
+            }
+            let daiAmt = await daiContract.functions.balanceOf(await signer.getAddress());
+            if (x>toEth(daiAmt)) {
+                setErrorMsg('Not enough USDC in wallet');
+                return
+            }
+            console.log("got here!");
+            let nContract = contract.connect(signer);
+            let nDaiContract = daiContract.connect(signer);
+            console.log(key.address);
+            let txh = await cashless.fundReservesTx(nContract, nDaiContract, queryAmt, key.address);
             if (txh!=null) {
                 setLastTxId(txh);
                 setIsTransacting(true);
@@ -149,11 +214,11 @@ export default function WalletPage(props) {
       if (loaded) {
         console.log("checking blockchain....");
         let balEthWei = await daiContract.signer.getBalance();
-        let balDaiWei = await daiContract.functions.balanceOf(daiContract.signer.getAddress());
-        let reserves = await cashless.getReserves(contract, contract.signer.getAddress());
+        let balDaiWei = await daiContract.functions.balanceOf(await daiContract.signer.getAddress());
+        let reserves = await contract.functions.balanceOf(await contract.signer.getAddress());
         let balEth = toEth(balEthWei);
         let balDai = toEth(balDaiWei);
-        let balRes = toEth(reserves["balance"]);
+        let balRes = toEth(reserves);
         if (myWalletDai != balDai) {
             setMyWalletDai(balDai);
         }
@@ -164,7 +229,7 @@ export default function WalletPage(props) {
             setMyReserves(balRes);
         }
       }
-  }, 5000);
+  }, 2000);
 
   return (
     <article>
@@ -174,31 +239,50 @@ export default function WalletPage(props) {
       </Helmet>
         {loaded ?
         <div>
-            <h1>Your Wallet Address: <br></br>{keyfile.eth.address}</h1>
-            <div className="outerDiv row">
-                <div className="aboveBorder halfwidth">
-                    <h1>Reserves</h1>
-                    <div className="borderedDiv halfwidth">
-                        <h1>USD: {myReserves.toFixed(2).toString()}</h1>
-                    </div>
+            <h1>Your Wallet:</h1>
+            <p className="center">{key.address}</p>
+            {isMetamask ? 
+            <div className="outerDiv center wallet">
+                <div className="borderedDiv center halfwidth">
+                    <h1>Reserve (USDC): {myReserves.toFixed(2).toString()}</h1>
                 </div>
-                <div className="noBorder center" onClick={handleSwitch}>
-                    {switchWithdraw ? <Img className="arrow" src={RightArrow}></Img>:<Img className="arrow" src={LeftArrow}></Img>}
+                <div className="borderedDiv center halfwidth">
+                    <h1>USDC: {myWalletDai.toFixed(2).toString()}</h1>
+                    <h1>ETH: {myWalletEth.toFixed(5).toString()}</h1>
                 </div>
-                <div className="aboveBorder halfwidth">
-                    <h1>Wallet</h1>
-                    <div className="borderedDiv halfwidth">
-                        {myWalletEth==0 ? <p> send ETH to wallet address!</p>:<h1>Eth: {myWalletEth.toFixed(5).toString()}</h1>}
-                        {myWalletDai==0 ? <p> send DAI to wallet address!</p>:<h1>USD: {myWalletDai.toFixed(2).toString()}</h1>}
-                    </div>
-                </div>
-            </div>
-            <div>
-                <p>
-                    <input type="text" className="textField" value={queryAmt} onChange={handleQueryAmt}/> <button className="mini" onClick={handleTransact}>{switchWithdraw ? 'withdraw':'fund'}</button>
+                <p className="center marginRight">
+                    <input type="text" className="textField" value={queryAmt} onChange={handleQueryAmt}/><button className="mini" onClick={handleTransact}>{(transactSwitch.fund) ? 'fund': 'withdraw'}</button>
                 </p>
-                <h1>{isTransacting ? <a className="oldLink" href={"https://"+network+".etherscan.io/tx/"+lastTxId}>{lastTxId}</a>:<span>{errorMsg!="" ? <span>{errorMsg}</span>:<span>{switchWithdraw ? 'Withdraw Your Reserves':'Fund Your Reserves'}</span>}</span>}</h1>
+                <p className="center marginRight">{isTransacting ? <a className="oldLink" href={"https://"+cashless.network+".etherscan.io/tx/"+lastTxId}>{lastTxId}</a>:<span>{errorMsg!="" ? <span>{errorMsg}</span>:<span>{transactSwitch.fund ? 'Fund Reserve with USDC':'Withdraw Reserve USDC'}</span>}</span>}</p>
+                <p className="center marginRight"><button className="mini" onClick={handleSwitch}>{transactSwitch.fund ? 'withdraw': 'fund'}</button></p>
             </div>
+            :
+            <div className="outerDiv center wallet">
+                <div className="borderedDiv center halfwidth">
+                    <h1>Reserve (USDC): {myReserves.toFixed(2).toString()}</h1>
+                </div>
+                {transactSwitch == null ? <p className="center marginRight"><button className="shortWidth" onClick={handleChooseFund}>fund</button>&nbsp;<button className="shortWidth" onClick={handleChooseWithdraw}>withdraw</button></p>
+                :
+                <span>{(transactSwitch.fund && transactSwitch.funder == null) ? <p className="center marginRight">fund your reserve with USDC token<br></br><button className="mini" onClick={handleChooseMetamask}>connect metamask wallet</button>&nbsp;<button className="mini" onClick={handleChooseCashless}>use cashless wallet</button></p>
+                    :
+                    <span>
+                        {(transactSwitch.fund && transactSwitch.funder=="metamask") ? <span></span>
+                        :
+                        <div className="borderedDiv center halfwidth">
+                            <h1>USDC: {myWalletDai.toFixed(2).toString()}</h1>
+                            <h1>ETH: {myWalletEth.toFixed(5).toString()}</h1>
+                        </div>
+                        }
+                        <p className="center marginRight">
+                            <input type="text" className="textField" value={queryAmt} onChange={handleQueryAmt}/><button className="mini" onClick={(transactSwitch.fund && transactSwitch.funder=="metamask") ? handleTransactMetamask : handleTransact}>{transactSwitch.fund ? 'fund': 'withdraw'}</button>
+                        </p>
+                        <p className="center marginRight">{isTransacting ? <a className="oldLink" href={"https://"+cashless.network+".etherscan.io/tx/"+lastTxId}>{lastTxId}</a>:<span>{errorMsg!="" ? <span>{errorMsg}</span>:<span>{transactSwitch.withdraw ? 'Withdraw Reserve to USDC':'Fund Reserve with USDC (from metamask)'}</span>}</span>}</p>
+                    </span>
+                    }
+                </span>
+                }
+            </div>
+            }
         </div>
         :
         <div className="outerDiv center">loading...</div>

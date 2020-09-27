@@ -8,26 +8,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import axios from 'axios';
-import * as crypto from 'crypto';
 import * as ethers from 'ethers';
 import * as cashless from 'containers/App/cashless';
 import { FormattedMessage } from 'react-intl';
 import messages from './messages';
-import './profile.css';
-
-const bufferToHex = (buffer) => {
-  let result = [...new Uint8Array (buffer)]
-      .map (b => b.toString (16).padStart (2, "0"))
-      .join ("");
-  return "0x"+result
-}
-
-const randomHash = () => {
-  let bytes = crypto.randomBytes(256);
-  let hash = crypto.createHash('sha256');
-  hash.update(bytes);
-  return hash.digest();
-}
+import 'containers/App/app.css';
 
 const uuid = () => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -49,21 +34,19 @@ const getGrossAmount = (promises) => {
     return gross;
 }
 
-const network = "rinkeby";
-const version = 1.0;
 const emptyHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
-const providerURL = "https://"+network+".infura.io/v3/fef5fecf13fb489387683541edfbd958";
+const providerURL = "https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey;
 
 const getReservesAmount = async (address) => {
 	let contract = cashless.contract(providerURL, null);
-    let resp = await cashless.getReserves(contract, address);
-    return resp["balance"]/ethers.utils.parseEther("1");
+    let resp = await contract.functions.balanceOf(address);
+    return resp/ethers.utils.parseEther("1");
 }
 
 export default function ProfilePage(props) {
 
   const [loaded, setLoaded] = useState(false);
-  const [keyfile, setKeyfile] = useState(null);
+  const [key, setKey] = useState(null);
   const [myFeed, setMyFeed] = useState(null);
   const [myReserves, setMyReserves] = useState(0.0);
 
@@ -148,8 +131,8 @@ export default function ProfilePage(props) {
   const loadKey = async () => {
     if (!loaded) {
         if (props.location.state!=null && props.location.state.key!=null) {
-            setKeyfile(props.location.state.key);
-            let ok = await getMyFeed(props.location.state.key.id);
+            setKey(props.location.state.key);
+            let ok = await getMyFeed(props.location.state.key.feedKey.id);
             if (ok) {
                 setLoaded(true);
             } else {
@@ -195,7 +178,7 @@ export default function ProfilePage(props) {
   }
 
   const handleGoWallet = _evt => {
-    props.history.push({pathname:'/wallet', state: {key: keyfile}});
+    props.history.push({pathname:'/wallet', state: {key: key}});
   }
 
   const handleCancel = _evt => {
@@ -213,13 +196,13 @@ export default function ProfilePage(props) {
   }
 
   const handleSubmitName = async evt => {
-    let idmsg = {feed: {id: keyfile.id}, name: {type:"COMMON", name: newName, id:uuid()}, type: "cashless/identity", header: {version: version, network: network}, evidence:null};
+    let idmsg = {feed: {id: key.feedKey.id}, name: {type:"COMMON", name: newName, id:uuid()}, type: "cashless/identity", header: {version: cashless.version, network: cashless.network}, evidence:null};
     try {
         let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg}, {});
         if (r.data.status=="ok") {
             console.log('reset name!');
             setChangeName(false);
-            await getMyFeed(keyfile.id);
+            await getMyFeed(key.feedKey.id);
         }
     } catch(e) {
         console.log('error changing name:', e.message);
@@ -239,20 +222,20 @@ export default function ProfilePage(props) {
         setPublishResponse("promised amount cannot be zero");
         return
     }
-    let promise = {type: "cashless/promise", header: {version: 1.0, network: network}};
-    let claimName = bufferToHex(randomHash());
+    let promise = {type: "cashless/promise", header: {version: cashless.version, network: cashless.network}};
+    let claimName = cashless.bufferToHex(cashless.randomHash());
     // !!!
     // NOTE: backdating promises by 60 days so settlements can happen immediately
     // !!!
     let issueTime = now()-(61*86400);
     let vestTime = issueTime+(60*86400);
     let voidTime = issueTime+(500*86400);
-    promise.from = {id: keyfile.id, commonName: myFeed.commonName, reserves: {address: keyfile.eth.address}};
+    promise.from = {id: key.feedKey.id, commonName: myFeed.commonName, reserves: {address: key.address}};
     if (!sendToEmail) {
         if (queryFeed==null) {
             setPublishResponse("must promise to an existing id");
         }
-        if (queryFeed.id==keyfile.id) {
+        if (queryFeed.id==key.feedKey.id) {
             setPublishResponse("cannot promise to yourself");
             return
         }
@@ -260,12 +243,12 @@ export default function ProfilePage(props) {
         // NOTE: dispute period at 0 so settlements can happen immediately
         // !!!
         let disputeDuration = 0;
-        let claimData = cashless.encodeClaim(promiseAmount, disputeDuration, vestTime, voidTime, keyfile.eth.address, queryFeed.reserves.address, claimName, emptyHash, 1);
-        let contract = cashless.contract(providerURL, keyfile.eth.private);
+        let claimData = cashless.encodeClaim(promiseAmount, disputeDuration, vestTime, voidTime, key.address, queryFeed.reserves.address, claimName, emptyHash, 1);
+        let contract = cashless.contract(providerURL, key.signer);
         let libContract = cashless.libContract(providerURL);
         let claimSig = await cashless.signClaim(contract, libContract, claimData);
         promise.to = queryFeed;
-        promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: bufferToHex(claimSig.r), s: bufferToHex(claimSig.s)}, claimData:bufferToHex(claimData)};
+        promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: cashless.bufferToHex(claimSig.r), s: cashless.bufferToHex(claimSig.s)}, claimData:cashless.bufferToHex(claimData)};
     } else {
         if (queryEmail.length>10 && queryEmail.substring(queryEmail.length-10, queryEmail.length) != "@gmail.com") {
             setPublishResponse("cannot promise to: "+queryEmail+ "(gmail only)");
@@ -285,7 +268,7 @@ export default function ProfilePage(props) {
         setQueryFeed(null);
         setAmount("0.00");
         setQueryEmail("@gmail.com");
-        await getMyFeed(keyfile.id);
+        await getMyFeed(key.feedKey.id);
     }
   }
 
@@ -300,7 +283,7 @@ export default function ProfilePage(props) {
         <meta name="description" content="My homepage" />
       </Helmet>
         {loaded ?
-        <div className="outerDiv">
+        <div className="outerDiv column">
             <div>
                 {changeName==false ?
                 <p><span className="bold under"><FormattedMessage {...messages.nameHeader} /></span>:&nbsp;
@@ -314,16 +297,16 @@ export default function ProfilePage(props) {
                 </p>
                 }
                 <p>
-                    <span className="bold under"><FormattedMessage {...messages.idHeader} /></span>: {keyfile.id}
+                    <span className="bold under"><FormattedMessage {...messages.idHeader} /></span>: {key.feedKey.id}
                 </p>
                 <p>
                     <span className="bold under"><FormattedMessage {...messages.reservesHeader} /></span>: {'$'+myReserves.toFixed(2).toString()} <span>&nbsp;<button className="mini" onClick={handleGoWallet}>go to Wallet</button></span>
                 </p>
                 <p>
-                    <span className="bold under"><FormattedMessage {...messages.incomingHeader} /></span>: <span className="green">{'$'+getGrossAmount(myFeed.assets).toFixed(2).toString()}&nbsp;&nbsp; <Link className="oldLink" to="/myAssets" promises={myFeed.assets} keyfile={keyfile}>see all</Link></span>
+                    <span className="bold under"><FormattedMessage {...messages.incomingHeader} /></span>: <span className="green">{'$'+getGrossAmount(myFeed.assets).toFixed(2).toString()}&nbsp;&nbsp; <Link className="oldLink" to="/myAssets" promises={myFeed.assets} key={key}>see all</Link></span>
                 </p>
                 <p>
-                    <span className="bold under"><FormattedMessage {...messages.outgoingHeader} /></span>: <span className="red">{'$'+getGrossAmount(myFeed.liabilities).toFixed(2).toString()}&nbsp;&nbsp; <Link className="oldLink" to="/myLiabilities" promises={myFeed.liabilities} keyfile={keyfile}>see all</Link></span>
+                    <span className="bold under"><FormattedMessage {...messages.outgoingHeader} /></span>: <span className="red">{'$'+getGrossAmount(myFeed.liabilities).toFixed(2).toString()}&nbsp;&nbsp; <Link className="oldLink" to="/myLiabilities" promises={myFeed.liabilities} key={key}>see all</Link></span>
                 </p>
             </div>
             <div className="borderedDiv">
