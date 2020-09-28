@@ -48,6 +48,7 @@ export default function ProfilePage(props) {
   const [loaded, setLoaded] = useState(false);
   const [key, setKey] = useState(null);
   const [myFeed, setMyFeed] = useState(null);
+  const [signer, setSigner] = useState(null);
   const [myReserves, setMyReserves] = useState(0.0);
 
   const [queryId, setQueryId] = useState("@");
@@ -59,6 +60,8 @@ export default function ProfilePage(props) {
   const [sendToEmail, setSendToEmail] = useState(false);
   const [changeName, setChangeName] = useState(false);
   const [newName, setNewName] = useState("");
+
+  const [isMetamask, setIsMetamask] = useState(false);
 
   const getMyFeed = async (feedId) => {
     const query = `query { feed(id:"`+feedId+`") {
@@ -135,6 +138,16 @@ export default function ProfilePage(props) {
             let ok = await getMyFeed(props.location.state.key.feedKey.id);
             if (ok) {
                 setLoaded(true);
+                if (props.location.state.key.private == null) {
+                    setIsMetamask(true);
+                    await window.ethereum.enable();
+                    const provider = new ethers.providers.Web3Provider(window.ethereum);
+                    let mySigner = provider.getSigner();
+                    setSigner(mySigner);
+                } else {
+                    let wallet = cashless.wallet(providerURL, props.location.state.key.private);
+                    setSigner(wallet);
+                }
             } else {
                 props.history.push({pathname: '/'});
             }
@@ -198,7 +211,7 @@ export default function ProfilePage(props) {
   const handleSubmitName = async evt => {
     let idmsg = {feed: {id: key.feedKey.id}, name: {type:"COMMON", name: newName, id:uuid()}, type: "cashless/identity", header: {version: cashless.version, network: cashless.network}, evidence:null};
     try {
-        let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg}, {});
+        let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg, key:key.feedKey}, {});
         if (r.data.status=="ok") {
             console.log('reset name!');
             setChangeName(false);
@@ -244,9 +257,23 @@ export default function ProfilePage(props) {
         // !!!
         let disputeDuration = 0;
         let claimData = cashless.encodeClaim(promiseAmount, disputeDuration, vestTime, voidTime, key.address, queryFeed.reserves.address, claimName, emptyHash, 1);
-        let contract = cashless.contract(providerURL, key.signer);
+        let claimSig;
+        let contract = cashless.contract(providerURL, null);
         let libContract = cashless.libContract(providerURL);
-        let claimSig = await cashless.signClaim(contract, libContract, claimData);
+        if (!isMetamask) {
+            contract = contract.connect(signer);
+            claimSig = await cashless.signClaim(contract, libContract, claimData);
+        } else {
+            let hash = await cashless.getClaimHash(contract, libContract, claimData);
+            let rawSig = await signer.signMessage(hash);
+            let res = ethers.utils.splitSignature(rawSig);
+            claimSig = {v: res.v, r: Uint8Array.from(Buffer.from(res.r.substring(2), 'hex')), s: Uint8Array.from(Buffer.from(res.s.substring(2), 'hex'))};
+        }
+        let j = await cashless.verifyClaimSig(contract, claimData, claimSig, true);
+        if (!j) {
+            console.log("claim signature failed validation");
+            return
+        }
         promise.to = queryFeed;
         promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: cashless.bufferToHex(claimSig.r), s: cashless.bufferToHex(claimSig.s)}, claimData:cashless.bufferToHex(claimData)};
     } else {
@@ -257,7 +284,7 @@ export default function ProfilePage(props) {
         promise.to = {verifiedAccounts: [{handle: queryEmail, accountType:"GMAIL"}]};
         promise.promise = {nonce:0, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime};
     }
-    let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise}, {});
+    let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise, key: key.feedKey}, {});
     if (res.data.status=="ok") {
         if (!sendToEmail) {
             setPublishResponse("published promise!");

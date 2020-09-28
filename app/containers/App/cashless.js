@@ -10,7 +10,7 @@ cashlessContractABI = () => {
 }
 
 cashlessLibContractABI = () => {
-    return [{"inputs": [], "stateMutability": "nonpayable", "type": "constructor"}, {"stateMutability": "nonpayable", "type": "fallback"}, {"inputs": [{"internalType": "bytes", "name": "data", "type": "bytes"}, {"internalType": "bytes32", "name": "domainSeparator", "type": "bytes32"}], "name": "hashClaimData", "outputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}], "stateMutability": "pure", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "claimName", "type": "bytes32"}, {"internalType": "address", "name": "sender", "type": "address"}, {"internalType": "address", "name": "receiver", "type": "address"}], "name": "getClaimID", "outputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}], "stateMutability": "pure", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "proposalName", "type": "bytes32"}, {"internalType": "address[]", "name": "loop", "type": "address[]"}], "name": "getLoopID", "outputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}], "stateMutability": "pure", "type": "function"}, {"inputs": [{"internalType": "bytes", "name": "a", "type": "bytes"}, {"internalType": "uint8[2]", "name": "b", "type": "uint8[2]"}, {"internalType": "bytes32[2]", "name": "c", "type": "bytes32[2]"}, {"internalType": "bytes32[2]", "name": "d", "type": "bytes32[2]"}], "name": "encodeLoopClaim", "outputs": [{"internalType": "bytes", "name": "", "type": "bytes"}], "stateMutability": "pure", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "hash", "type": "bytes32"}, {"internalType": "uint8", "name": "v", "type": "uint8"}, {"internalType": "bytes32", "name": "r", "type": "bytes32"}, {"internalType": "bytes32", "name": "s", "type": "bytes32"}, {"internalType": "address", "name": "signer", "type": "address"}], "name": "verifySignature", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "pure", "type": "function"}];
+    return [{"inputs": [], "stateMutability": "nonpayable", "type": "constructor"}, {"stateMutability": "nonpayable", "type": "fallback"}, {"inputs": [{"internalType": "bytes", "name": "data", "type": "bytes"}, {"internalType": "bytes32", "name": "domainSeparator", "type": "bytes32"}], "name": "hashClaimData", "outputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}], "stateMutability": "pure", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "_hash", "type": "bytes32"}], "name": "messageHash", "outputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}], "stateMutability": "pure", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "claimName", "type": "bytes32"}, {"internalType": "address", "name": "sender", "type": "address"}, {"internalType": "address", "name": "receiver", "type": "address"}], "name": "getClaimID", "outputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}], "stateMutability": "pure", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "proposalName", "type": "bytes32"}, {"internalType": "address[]", "name": "loop", "type": "address[]"}], "name": "getLoopID", "outputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}], "stateMutability": "pure", "type": "function"}, {"inputs": [{"internalType": "bytes", "name": "a", "type": "bytes"}, {"internalType": "uint8[2]", "name": "b", "type": "uint8[2]"}, {"internalType": "bytes32[2]", "name": "c", "type": "bytes32[2]"}, {"internalType": "bytes32[2]", "name": "d", "type": "bytes32[2]"}], "name": "encodeLoopClaim", "outputs": [{"internalType": "bytes", "name": "", "type": "bytes"}], "stateMutability": "pure", "type": "function"}, {"inputs": [{"internalType": "bytes32", "name": "hash", "type": "bytes32"}, {"internalType": "uint8", "name": "v", "type": "uint8"}, {"internalType": "bytes32", "name": "r", "type": "bytes32"}, {"internalType": "bytes32", "name": "s", "type": "bytes32"}, {"internalType": "address", "name": "signer", "type": "address"}], "name": "verifySignature", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "pure", "type": "function"}];
 }
 
 erc20ContractABI = () => {
@@ -22,7 +22,7 @@ cashlessAddress = network => {
 		return "";
 	}
 	if (network == "rinkeby") {
-		return "0x9eb9659a77d071217918a6067174a25bCbe7eD5a";
+		return "0xEBbf95f920541CFEeb1a57585544329f23639337";
 	}
 	if (network == "dev") {
 		return "0x20346Aebaacfa94B8dcd7F5cE3B7f25d3163C672";
@@ -35,7 +35,7 @@ cashlessLibAddress = network => {
 		return "";
 	}
 	if (network == "rinkeby") {
-		return "0x0CCB150D61bF5B6E65667d10515B856574769b45";
+		return "0xfe567B8E659FC2C954ef86d7BB8aEca3bA3F1E7b";
 	}
 	if (network == "dev") {
 		return "0xb3869548879977C80564f0a42FF934F0cEf4BBC7";
@@ -145,16 +145,28 @@ exports.getClaimID = async (cashlessLib, claimName, senderAddress, receiverAddre
 	} 
 }
 
+exports.getClaimHash = async (cashless, cashlessLib, claimData) => {
+    let ds = await cashless.functions.DOMAIN_SEPARATOR();
+    ds = ds[0];
+    let h = await cashlessLib.functions.hashClaimData(claimData, ds);
+    h = h[0].substring(2);
+    let bh = Uint8Array.from(Buffer.from(h, 'hex'));
+    return bh;
+}
+
 exports.signClaim = async (cashless, cashlessLib, claimData) => {
 	try {
 		let privateKey = cashless.signer.privateKey;
 		let ds = await cashless.functions.DOMAIN_SEPARATOR();
 		ds = ds[0];
-		let h = await cashlessLib.functions.hashClaimData(claimData, ds);
-		h = h[0].substring(2);
-		let bh = Uint8Array.from(Buffer.from(h, 'hex'));
+        let h1 = await cashlessLib.functions.hashClaimData(claimData, ds);
+        h1 = h1[0].substring(2);
+        let bh1 = Uint8Array.from(Buffer.from(h1, 'hex'));
+        let h = await cashlessLib.functions.messageHash(bh1);
+        h = h[0].substring(2);
+        let bh = Uint8Array.from(Buffer.from(h, 'hex'));
 		let priv = Uint8Array.from(Buffer.from(privateKey.substring(2), 'hex'));
-		return ecsign(bh, priv);		
+		return ecsign(bh, priv);
 	} catch(e) {
 		console.log("error signing claim:", e.message);
 		return

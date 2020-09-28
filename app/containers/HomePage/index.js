@@ -104,7 +104,7 @@ export default function HomePage(props) {
     if (useMetamask) {
         keyfile.eth = {private: null, address: key.address};
     } else {
-        keyfile.eth = {private: priv, address: key.address};
+        keyfile.eth = {private: key.private, address: key.address};
     }
     var data = new Blob([JSON.stringify(keyfile)], {type: 'application/json'});
     var url = window.URL.createObjectURL(data);
