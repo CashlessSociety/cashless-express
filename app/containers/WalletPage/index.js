@@ -5,15 +5,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import axios from 'axios';
 import * as crypto from 'crypto';
 import * as ethers from 'ethers';
 import * as cashless from 'containers/App/cashless';
-import { useInterval } from 'containers/AdminPage/interval';
-import { FormattedMessage } from 'react-intl';
-import messages from './messages';
+import { keyFileStickyState, safeKey } from 'utils/stateUtils';
 import './wallet.css';
 
 const bufferToHex = (buffer) => {
@@ -43,8 +39,8 @@ const toEth = (num) => {
 
 export default function WalletPage(props) {
 
+  const [keyfile, setKeyFile] = keyFileStickyState();
   const [loaded, setLoaded] = useState(false);
-  const [keyfile, setKeyfile] = useState(null);
   const [myReserves, setMyReserves] = useState(0.0);
   const [myWalletEth, setMyWalletEth] = useState(0.0);
   const [myWalletDai, setMyWalletDai] = useState(0.0);

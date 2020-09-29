@@ -12,6 +12,7 @@ import * as crypto from 'crypto';
 import * as ethers from 'ethers';
 import * as cashless from 'containers/App/cashless';
 import { FormattedMessage } from 'react-intl';
+import { keyFileStickyState, safeKey } from 'utils/stateUtils';
 import messages from './messages';
 import './profile.css';
 
@@ -62,20 +63,20 @@ const getReservesAmount = async (address) => {
 
 export default function ProfilePage(props) {
 
-  const [loaded, setLoaded] = useState(false);
-  const [keyfile, setKeyfile] = useState(null);
-  const [myFeed, setMyFeed] = useState(null);
-  const [myReserves, setMyReserves] = useState(0.0);
+    const [keyfile, setKeyFile] = keyFileStickyState();
+    const [loaded, setLoaded] = useState(false);
+    const [myFeed, setMyFeed] = useState(null);
+    const [myReserves, setMyReserves] = useState(0.0);
 
-  const [queryId, setQueryId] = useState("@");
-  const [queryEmail, setQueryEmail] = useState("@gmail.com");
-  const [promiseAmount, setAmount] = useState("0.00");
-  const [queryFeed, setQueryFeed] = useState(null);
-  const [publishResponse, setPublishResponse] = useState("publish a promise!");
+    const [queryId, setQueryId] = useState("@");
+    const [queryEmail, setQueryEmail] = useState("@gmail.com");
+    const [promiseAmount, setAmount] = useState("0.00");
+    const [queryFeed, setQueryFeed] = useState(null);
+    const [publishResponse, setPublishResponse] = useState("publish a promise!");
 
-  const [sendToEmail, setSendToEmail] = useState(false);
-  const [changeName, setChangeName] = useState(false);
-  const [newName, setNewName] = useState("");
+    const [sendToEmail, setSendToEmail] = useState(false);
+    const [changeName, setChangeName] = useState(false);
+    const [newName, setNewName] = useState("");
 
   const getMyFeed = async (feedId) => {
     const query = `query { feed(id:"`+feedId+`") {
@@ -126,7 +127,7 @@ export default function ProfilePage(props) {
         }
     }}`;
     try {
-        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        let r = await axios.post('http://127.0.0.1:4000', {query:query, key: safeKey(keyfile) });
         if (r.data.data.feed != null && r.data.data.feed.reserves != null) {
             setMyFeed(r.data.data.feed);
             setMyReserves(await getReservesAmount(r.data.data.feed.reserves.address));
@@ -148,7 +149,7 @@ export default function ProfilePage(props) {
   const loadKey = async () => {
     if (!loaded) {
         if (props.location.state!=null && props.location.state.key!=null) {
-            setKeyfile(props.location.state.key);
+            setKeyFile(props.location.state.key);
             let ok = await getMyFeed(props.location.state.key.id);
             if (ok) {
                 setLoaded(true);
@@ -181,7 +182,7 @@ export default function ProfilePage(props) {
           }
         }`;
       
-        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        let r = await axios.post('http://127.0.0.1:4000', {query:query, key: safeKey(keyfile)}, {});
         if (r.data.data.feed.reserves.address != null) {
             setQueryFeed(r.data.data.feed);
         }
@@ -215,7 +216,7 @@ export default function ProfilePage(props) {
   const handleSubmitName = async evt => {
     let idmsg = {feed: {id: keyfile.id}, name: {type:"COMMON", name: newName, id:uuid()}, type: "cashless/identity", header: {version: version, network: network}, evidence:null};
     try {
-        let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg}, {});
+        let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg, key: safeKey(keyfile)}, {});
         if (r.data.status=="ok") {
             console.log('reset name!');
             setChangeName(false);
@@ -274,7 +275,7 @@ export default function ProfilePage(props) {
         promise.to = {verifiedAccounts: [{handle: queryEmail, accountType:"GMAIL"}]};
         promise.promise = {nonce:0, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime};
     }
-    let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise}, {});
+    let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise, key: safeKey(keyfile)}, {});
     if (res.data.status=="ok") {
         if (!sendToEmail) {
             setPublishResponse("published promise!");
