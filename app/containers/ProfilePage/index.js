@@ -65,6 +65,7 @@ export default function ProfilePage(props) {
 
   const getMyFeed = async (feedId) => {
     const query = `query { feed(id:"`+feedId+`") {
+        id
         reserves {
             address
         }
@@ -81,6 +82,7 @@ export default function ProfilePage(props) {
             denomination
             vestDate
             nonce
+            claimName
             author {
                 id
                 reserves {
@@ -88,6 +90,14 @@ export default function ProfilePage(props) {
                 }
                 commonName {
                     name
+                }
+            }
+            claim {
+                data
+                fromSignature {
+                    v
+                    r
+                    s
                 }
             }
         }
@@ -105,10 +115,19 @@ export default function ProfilePage(props) {
                     handle
                 }
             }
+            claimName
             amount
             denomination
             vestDate
             nonce
+            claim {
+                data
+                fromSignature {
+                    v
+                    r
+                    s
+                }
+            }
         }
     }}`;
     try {
@@ -230,6 +249,14 @@ export default function ProfilePage(props) {
       setSendToEmail(false);
   }
 
+  const handleGoAssets = _evt => {
+    props.history.push({pathname: '/myAssets', state: {feed: myFeed, key: key}});
+  }
+
+  const handleGoLiabilities = _evt => {
+    props.history.push({pathname: '/myLiabilities', state:{feed: myFeed, key: key}});
+  }
+
   const handlePublish = async _evt => {
     if (Number(promiseAmount)<=0) {
         setPublishResponse("promised amount cannot be zero");
@@ -330,10 +357,10 @@ export default function ProfilePage(props) {
                     <span className="bold under"><FormattedMessage {...messages.reservesHeader} /></span>: {'$'+myReserves.toFixed(2).toString()} <span>&nbsp;<button className="mini" onClick={handleGoWallet}>go to Wallet</button></span>
                 </p>
                 <p>
-                    <span className="bold under"><FormattedMessage {...messages.incomingHeader} /></span>: <span className="green">{'$'+getGrossAmount(myFeed.assets).toFixed(2).toString()}&nbsp;&nbsp; <Link className="oldLink" to="/myAssets" promises={myFeed.assets} key={key}>see all</Link></span>
+                    <span className="bold under"><FormattedMessage {...messages.incomingHeader} /></span>: <span className="green">{'$'+getGrossAmount(myFeed.assets).toFixed(2).toString()}&nbsp;&nbsp; <a className="oldLink" onClick={handleGoAssets}>see all</a></span>
                 </p>
                 <p>
-                    <span className="bold under"><FormattedMessage {...messages.outgoingHeader} /></span>: <span className="red">{'$'+getGrossAmount(myFeed.liabilities).toFixed(2).toString()}&nbsp;&nbsp; <Link className="oldLink" to="/myLiabilities" promises={myFeed.liabilities} key={key}>see all</Link></span>
+                    <span className="bold under"><FormattedMessage {...messages.outgoingHeader} /></span>: <span className="red">{'$'+getGrossAmount(myFeed.liabilities).toFixed(2).toString()}&nbsp;&nbsp; <a className="oldLink" onClick={handleGoLiabilities}>see all</a></span>
                 </p>
             </div>
             <div className="borderedDiv">
