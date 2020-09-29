@@ -41,11 +41,10 @@ export const safeKey = key => {
   }
   // !! we must never pass ethereum keys to the backend
   const tmp = JSON.parse(JSON.stringify(key));
-  delete tmp.eth;
-  return tmp;
+  return tmp.feedKey;
 };
 
-export const keyFileStickyState = () => {
+export const useKeyFileStickyState = () => {
   return useStickyState(null, "keyFile");
 };
 

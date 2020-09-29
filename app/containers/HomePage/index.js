@@ -11,12 +11,15 @@ import * as ssbKeys from 'ssb-keys';
 import * as cashless from 'containers/App/cashless';
 import * as ethers from 'ethers';
 import { FormattedMessage } from 'react-intl';
+import { useKeyFileStickyState, safeKey } from 'utils/stateUtils';
 import messages from './messages';
 import 'containers/App/app.css';
+import { keyBy } from 'lodash';
 
 export default function HomePage(props) {
 
   const [clickedJoin, setClickedJoin] = useState(false);
+  const [keyfile, setKeyfile] = useKeyFileStickyState();
 
   const newKey = async (useMetamask) => {
     let key = ssbKeys.generate("ed25519", cashless.randomHash());
@@ -79,14 +82,15 @@ export default function HomePage(props) {
     let key = await newKey(useMetamask);
     let idmsg = {feed: {id: key.feedKey.id}, name: {type:"RESERVES", address: key.address}, type: "cashless/identity", header: {version: cashless.version, network: cashless.network}, evidence:null};
     try {
-        let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg, key:key.feedKey}, {});
+        let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg, key:safeKey(key)}, {});
         if (r.data.status=="ok") {
             console.log("published id msg!");
             let ok = await hasFeed(key.feedKey.id, key.address);
             if (ok) {
                 console.log("has feed key!");
                 handleDownload(key, useMetamask);
-                console.log("downlaoded key!");
+                console.log("downloaded key!");
+                setKeyfile(key)
                 props.history.push({pathname:'/profile', state: {key: key}});
             }
         }

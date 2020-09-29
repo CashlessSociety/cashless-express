@@ -5,11 +5,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import axios from 'axios';
 import * as ethers from 'ethers';
 import * as cashless from 'containers/App/cashless';
+import { useKeyFileStickyState, safeKey } from 'utils/stateUtils';
 import { FormattedMessage } from 'react-intl';
 import messages from './messages';
 import 'containers/App/app.css';
@@ -46,7 +46,8 @@ const getReservesAmount = async (address) => {
 export default function ProfilePage(props) {
 
   const [loaded, setLoaded] = useState(false);
-  const [key, setKey] = useState(null);
+  const [key, setKey] = useKeyFileStickyState();
+
   const [myFeed, setMyFeed] = useState(null);
   const [signer, setSigner] = useState(null);
   const [myReserves, setMyReserves] = useState(0.0);
@@ -230,7 +231,7 @@ export default function ProfilePage(props) {
   const handleSubmitName = async evt => {
     let idmsg = {feed: {id: key.feedKey.id}, name: {type:"COMMON", name: newName, id:uuid()}, type: "cashless/identity", header: {version: cashless.version, network: cashless.network}, evidence:null};
     try {
-        let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg, key:key.feedKey}, {});
+        let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg, key:safeKey(key)}, {});
         if (r.data.status=="ok") {
             console.log('reset name!');
             setChangeName(false);
@@ -311,7 +312,7 @@ export default function ProfilePage(props) {
         promise.to = {verifiedAccounts: [{handle: queryEmail, accountType:"GMAIL"}]};
         promise.promise = {nonce:0, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime};
     }
-    let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise, key: key.feedKey}, {});
+    let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise, key:safeKey(key)}, {});
     if (res.data.status=="ok") {
         if (!sendToEmail) {
             setPublishResponse("published promise!");

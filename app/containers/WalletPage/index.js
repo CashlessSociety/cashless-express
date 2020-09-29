@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import * as ethers from 'ethers';
 import * as cashless from 'containers/App/cashless';
-import { useInterval } from 'containers/AdminPage/interval';
+import { useInterval } from 'utils/stateUtils';
 import 'containers/App/app.css';
 
 const providerURL = "https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey;
