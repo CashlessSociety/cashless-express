@@ -11,7 +11,7 @@ import FileUploadSquare from 'components/FileUploadSquare';
 import axios from 'axios';
 import { FormattedMessage } from 'react-intl';
 import messages from './messages';
-import { useInterval } from './interval';
+import { useInterval } from 'utils/stateUtils';
 import './admin.css';
 
 const now = () => {
