@@ -91,7 +91,7 @@ export default function AssetPage(props) {
         {loaded ?
         <div className="outerDiv center">
             {
-            feed.liabilities.map(({ amount, recipient, vestDate, claim, claimName }) => {
+            feed.liabilities.map(({ amount, recipient, vestDate, claim, claimName, nonce }) => {
             return <TransactionBlob 
                 recipient = {recipient}
                 amount = {amount}
@@ -100,6 +100,7 @@ export default function AssetPage(props) {
                 author = {{id: feed.id, commonName: feed.commonName, reserves: feed.reserves}}
                 reservesAmt = {myReserves}
                 isVerified = {allVerified[claimName]}
+                nonce = {nonce}
             />;
             })}
         </div>

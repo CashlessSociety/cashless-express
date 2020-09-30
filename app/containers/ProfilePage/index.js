@@ -265,10 +265,7 @@ export default function ProfilePage(props) {
     }
     let promise = {type: "cashless/promise", header: {version: cashless.version, network: cashless.network}};
     let claimName = cashless.bufferToHex(cashless.randomHash());
-    // !!!
-    // NOTE: backdating promises by 60 days so settlements can happen immediately
-    // !!!
-    let issueTime = now()-(61*86400);
+    let issueTime = now();
     let vestTime = issueTime+(60*86400);
     let voidTime = issueTime+(500*86400);
     promise.from = {id: key.feedKey.id, commonName: myFeed.commonName, reserves: {address: key.address}};
@@ -281,7 +278,7 @@ export default function ProfilePage(props) {
             return
         }
         // !!!
-        // NOTE: dispute period at 0 so settlements can happen immediately
+        // IMPORTANT: dispute period at 0 so settlements can happen immediately
         // !!!
         let disputeDuration = 0;
         let claimData = cashless.encodeClaim(promiseAmount, disputeDuration, vestTime, voidTime, key.address, queryFeed.reserves.address, claimName, emptyHash, 1);

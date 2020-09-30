@@ -5,6 +5,7 @@
     padding-left: 1em;
     margin: 1em;
     width: 100%;
+    font-size:0.8em;
 }
 
 .center {
@@ -44,6 +45,12 @@ button:hover {
     transform: scale(1.2);
 }
 
+p {
+    padding: 0;
+    margin: 0;
+    margin-bottom: 0.3em;
+}
+
 .blobTable {
     width: 100%;
 }
@@ -62,12 +69,14 @@ button:hover {
 
 .width70 {
     width: 70%;
-    padding: 1em;
 }
 
 .width30 {
     width: 30%;
-    padding: 1em;
+}
+
+.width25 {
+    width: 30%;
 }
 
 .green {
