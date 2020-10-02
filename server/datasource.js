@@ -122,7 +122,10 @@ class ssbFlumeAPI extends DataSource {
             }
             if (idMsgs[j].name.type == "ACCOUNT") {
                 // NOTE assumes the pub on this server is the "trusted" feed publishing identity links aftter firebase auth
-                let msgs = await this.getIdMsgsByFeedId({feedId: ssb.client().id});
+                // !!!!
+                // AUTHENTICAITON currently disabled
+                // !!!!
+                /*let msgs = await this.getIdMsgsByFeedId({feedId: ssb.client().id});
                 for (let k=0; k<msgs.length; k++) {
                     if (msgs[k].id == idMsgs[j].name.evidence.id) {
                         if (msgs[k].feed.id==feedId && msgs[k].name.type=="ACCOUNT" && msg.name.handle==idMsgs[j].name.handle) {
@@ -130,7 +133,8 @@ class ssbFlumeAPI extends DataSource {
                         }
                         break
                     }
-                }
+                }*/
+                accounts.push(idMsgs[j].name);
             }
         }
       }
@@ -139,13 +143,15 @@ class ssbFlumeAPI extends DataSource {
       for (let i=0; i<allPromises.length; i++) {
           if (allPromises[i].isLatest && allPromises[i].recipient.id == feedId) {
             promised.push(allPromises[i]);
+          } else if (allPromises[i].isLatest && allPromises[i].recipient.id==null && accounts.length==1 && allPromises[i].recipient.verifiedAccounts[0].handle == accounts[0].handle) {
+            promised.push(allPromises[i]);
           }
       }
       let promises = await this.getPromisesByFeedId({ feedId });
-      let assets = [];
+      let liabilities = [];
       for (let n=0; n<promises.length; n++) {
           if (promises[n].isLatest) {
-            assets.push(promises[n]);
+            liabilities.push(promises[n]);
           }
       }
       let feedMsgs = await this.getFeedMessages({ feedId });
@@ -157,7 +163,7 @@ class ssbFlumeAPI extends DataSource {
           verifiedAccounts: accounts,
           reserves: reserves,
           commonName: commonName,
-          liabilities: promises,
+          liabilities: liabilities,
       }
   }
 

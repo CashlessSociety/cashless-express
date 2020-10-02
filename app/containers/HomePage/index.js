@@ -19,7 +19,7 @@ import { keyBy } from 'lodash';
 export default function HomePage(props) {
 
   const [clickedJoin, setClickedJoin] = useState(false);
-  const [keyfile, setKeyfile] = useKeyFileStickyState();
+  const [key, setKey] = useKeyFileStickyState();
 
   const newKey = async (useMetamask) => {
     let key = ssbKeys.generate("ed25519", cashless.randomHash());
@@ -90,8 +90,8 @@ export default function HomePage(props) {
                 console.log("has feed key!");
                 handleDownload(key, useMetamask);
                 console.log("downloaded key!");
-                setKeyfile(key)
-                props.history.push({pathname:'/profile', state: {key: key}});
+                setKey(key);
+                props.history.push({pathname:'/profile'});
             }
         }
     } catch(e) {
@@ -103,8 +103,6 @@ export default function HomePage(props) {
     let link = document.createElement('A');
     link.download ='key';
     let keyfile = JSON.parse(JSON.stringify(key.feedKey));
-    console.log("got here!");
-    console.log(keyfile);
     if (useMetamask) {
         keyfile.eth = {private: null, address: key.address};
     } else {
@@ -149,7 +147,8 @@ export default function HomePage(props) {
       if (ok) {
         delete keyfile.eth;
         let key = {feedKey: keyfile, private: priv, address: address};
-        props.history.push({pathname:'/profile', state: {key: key}});
+        setKey(key);
+        props.history.push({pathname:'/profile'});
       }
     }
     const reader = new FileReader();
