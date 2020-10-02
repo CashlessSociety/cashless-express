@@ -12,6 +12,11 @@
     text-align: center;
 }
 
+.largeP {
+    font-size:1.5em;
+    font-weight: bold;
+}
+
 button {
     background-color:  transparent;
     color: black;
@@ -47,8 +52,10 @@ button:hover {
 
 p {
     padding: 0;
-    margin: 0;
+    margin-top: 0.3em;
     margin-bottom: 0.3em;
+    text-align: left;
+    margin-left: 1em;
 }
 
 .blobTable {
@@ -67,16 +74,16 @@ p {
     width: 50%;
 }
 
-.width70 {
-    width: 70%;
+.width60 {
+    width: 60%;
 }
 
-.width30 {
-    width: 30%;
+.width40 {
+    width: 40%;
 }
 
 .width25 {
-    width: 30%;
+    width: 25%;
 }
 
 .green {

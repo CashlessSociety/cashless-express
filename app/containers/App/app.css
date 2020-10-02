@@ -101,6 +101,11 @@ button {
     line-height: 3em;
 }
 
+ul {
+    list-style-type: none; /* Remove bullets */
+    margin: 0; /* Remove margins */
+  }
+
 button.mini {
     background-color:  black;
     color: white;
@@ -127,7 +132,7 @@ button:hover {
 
 p {
     font-size: 1.3em;
-    line-height: 1.5em;
+    line-height: 1.8em;
 }
 
 h1 {
@@ -188,6 +193,15 @@ h1 {
     margin-left:0;
     margin-right:0;
     height: 20em;
+}
+
+h2 {
+    text-align:center;
+}
+
+.blackButton {
+    color: white;
+    background-color: black;
 }
 
 /*@media only screen and (max-height: 730px) {

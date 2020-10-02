@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import * as ethers from 'ethers';
 import * as cashless from 'containers/App/cashless';
-import { useInterval } from 'utils/stateUtils';
+import { useKeyFileStickyState, useInterval } from 'utils/stateUtils';
 import 'containers/App/app.css';
 
 const providerURL = "https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey;
@@ -23,7 +23,7 @@ const fromEth = (num) => {
 
 export default function WalletPage(props) {
   const [loaded, setLoaded] = useState(false);
-  const [key, setKey] = useState(null);
+  const [key, setKey] = useKeyFileStickyState();
   const [myReserves, setMyReserves] = useState(0.0);
   const [myWalletEth, setMyWalletEth] = useState(0.0);
   const [myWalletDai, setMyWalletDai] = useState(0.0);
@@ -35,13 +35,12 @@ export default function WalletPage(props) {
   const [lastTxId, setLastTxId] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const loadKey = async () => {
+  const load = async () => {
     if (!loaded) {
-        if (props.location.state!=null && props.location.state.key!=null) {
-            setKey(props.location.state.key);
+        if (key != null) {
             let mySigner;
-            if (props.location.state.key.private != null) {
-                mySigner = cashless.wallet(providerURL, props.location.state.key.private);
+            if (key.private != null) {
+                mySigner = cashless.wallet(providerURL, key.private);
             } else {
                 await window.ethereum.enable();
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -50,8 +49,8 @@ export default function WalletPage(props) {
             let myDaiContract = cashless.stablecoinContract(providerURL, mySigner);
             let myContract = cashless.contract(providerURL, mySigner);
             let balEthWei = await myDaiContract.signer.getBalance();
-            let balDaiWei = await myDaiContract.functions.balanceOf(props.location.state.key.address);
-            let reserve = await myContract.functions.balanceOf(props.location.state.key.address);
+            let balDaiWei = await myDaiContract.functions.balanceOf(key.address);
+            let reserve = await myContract.functions.balanceOf(key.address);
             setDaiContract(myDaiContract);
             setContract(myContract);
             let balEth = toEth(balEthWei);
@@ -106,9 +105,6 @@ export default function WalletPage(props) {
                 setErrorMsg('Not enough DAI in wallet');
                 return
             }
-            console.log(await contract.signer.getAddress());
-            console.log(await daiContract.signer.getAddress());
-            console.log(queryAmt);
             let txh = await cashless.fundReservesTx(contract, daiContract, queryAmt);
             if (txh!=null) {
                 setLastTxId(txh);
@@ -123,7 +119,7 @@ export default function WalletPage(props) {
   }
 
   useEffect(() => {
-    (async () => await loadKey())();
+    (async () => await load())();
   }, []);
 
   useInterval(async () => {
@@ -155,7 +151,7 @@ export default function WalletPage(props) {
       </Helmet>
         {loaded ?
         <div>
-            <h1>Your Wallet:</h1>
+            <h2>Your Wallet:</h2>
             <p className="center">{key.address}</p>
             <div className="outerDiv center wallet">
                 <div className="borderedDiv center halfwidth">

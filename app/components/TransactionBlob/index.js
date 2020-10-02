@@ -1,7 +1,10 @@
 import './tx.css';
 import React, { useState } from 'react';
+import { encode } from 'url-safe-base64';
 import * as cashless from 'containers/App/cashless';
 import * as ethers from 'ethers';
+import { useKeyFileStickyState, safeKey } from 'utils/stateUtils';
+import { Link } from 'react-router-dom';
 
 const toEth = (num) => {
     return num/ethers.utils.parseEther("1");
@@ -30,9 +33,12 @@ const getAccountsString = (accounts) => {
     return s.substring(0, s.length-2);
 }
 
+const providerURL = "https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey;
+
 function TransactionBlob(props) {
 
     const [seeDetails, setSeeDetails] = useState(false);
+    const [key, setKey] = useKeyFileStickyState();
     const [isJSON, setIsJSON] = useState(false);
 
     const handleSeeDetails = _evt => {
@@ -47,36 +53,84 @@ function TransactionBlob(props) {
         setIsJSON(!isJSON);
     }
 
+    const handleClaimPromise = async _evt => {
+        console.log("attempting settlement");
+        let data = Uint8Array.from(Buffer.from(props.claimData.substring(2), 'hex'));
+        console.log(data);
+        let contract = cashless.contract(providerURL, null);
+        let libContract = cashless.libContract(providerURL);
+        let claimSig;
+        if (key.private != null) {
+            let wallet = cashless.wallet(providerURL, key.private);
+            contract = contract.connect(wallet);
+            claimSig = await cashless.signClaim(contract, libContract, data);
+        } else {
+            await window.ethereum.enable();
+            let provider = new ethers.providers.Web3Provider(window.ethereum);
+            let signer = provider.getSigner();
+            let hash = await cashless.getClaimHash(contract, libContract, data);
+            let rawSig = await signer.signMessage(hash);
+            let res = ethers.utils.splitSignature(rawSig);
+            claimSig = {v: res.v, r: Uint8Array.from(Buffer.from(res.r.substring(2), 'hex')), s: Uint8Array.from(Buffer.from(res.s.substring(2), 'hex'))};
+        }
+        console.log("check sig:", claimSig);
+        let j = await cashless.verifyClaimSig(contract, data, claimSig, false);
+        console.log(j);
+        if (!j) {
+            console.log("claim signature failed validation");
+            return
+        }
+        console.log("signed!");
+        let receiverSig = claimSig;
+        let senderSig = {v: props.fromSignature.v, r: Uint8Array.from(Buffer.from(props.fromSignature.r.substring(2), 'hex')), s: Uint8Array.from(Buffer.from(props.fromSignature.s.substring(2), 'hex'))};
+        let txh;
+        if (key.private != null) {
+            let wallet = cashless.wallet(providerURL, key.private);
+            contract = contract.connect(wallet);
+            txh = await cashless.proposeSettlementTx(contract, data, senderSig, receiverSig);
+        } else {
+            await window.ethereum.enable();
+            let provider = new ethers.providers.Web3Provider(window.ethereum);
+            let signer = provider.getSigner();
+            contract = contract.connect(signer);
+            txh = await cashless.proposeSettlementTx(contract, data, senderSig, receiverSig);
+        }
+        console.log(txh);
+    }
+
     return (
         <div className="blobOuter center">
             <div>
-                <table className= "blobTable">
-                    <col className="width50"></col>
-                    <col className="width25"></col>
-                    <col className="width25"></col>
-                    <thead>    
+                <table className= "blobTable leftAlign">
+                    <col className="width60"></col>
+                    <col className="width40"></col>
+                    <tbody>
                     <tr>
-                        <td><p>To: {props.recipient.id == null ? props.recipient.verifiedAccounts[0].handle:<span className="smaller">{props.recipient.id}</span>}</p></td>
-                        <td><p>Amount Due:  ${props.amount.toFixed(2)}</p></td>
-                        <td>{Number(props.vestDate) - now() > 0 ? <p>Vest: {((Number(props.vestDate)-now())/86400).toFixed(1)} days</p>: <p>vested</p>}</td>
+                        <td><h1><strong>ID:{props.claimName}</strong></h1></td>
+                        <td><h1><strong>Nonce: {props.nonce}</strong></h1></td>
                     </tr>
-                    <tr>
-                        <td><p>From: <span className="smaller">{props.author.id}</span></p></td>
-                        <td><p>risk of default: {(props.reservesAmt < props.amount) ? <span className="red">high</span>:<span className="green">low</span>}</p></td>
-                        <td>{((Number(props.vestDate) - now() < 0) && props.isMyAsset) ? <p><button className="mini">claim</button></p>:<span></span>}</td>
-                    </tr>
-                    </thead>
+                    </tbody>
                 </table>
+                <p className="largeP">Amount:  ${props.amount.toFixed(2)}</p>
+                <p className="largeP">To: {props.recipient.id == null ? props.recipient.verifiedAccounts[0].handle:<Link to={"/feed/"+encode(props.recipient.id.substring(1, props.recipient.id.length-8))} className="oldLink">{props.recipient.id.substring(0, 8)+'...'}</Link>}</p>
+                <p className="largeP">From: <Link to={"/feed/"+encode(props.author.id.substring(1, props.author.id.length-8))} className="oldLink">{props.author.commonName == null ? props.author.id.substring(0, 10)+'...': props.author.commonName.name}</Link></p>
+                <p className="largeP">Risk of Default: {props.claimData != null ? <span>{(props.reservesAmt < props.amount) ? <span className="red">high</span>:<span className="green">low</span>}</span>: <span className="grey">none</span>}</p>
+                <p className="largeP">Due Date: {Number(props.vestDate) - now() > 0 ? <span>{(new Date(props.vestDate*1000)).toLocaleString()}</span>:<span className="green">Available Now</span>}</p>
+                <span>{(props.isMyAsset) && (Number(props.vestDate) - now() < 0) ? <p><button className="mini" onClick={handleClaimPromise}>claim!</button></p>:<p></p>}</span>
                 {seeDetails ?
                 <span>
-                    <br></br><br></br>
+                    <br></br>
                     <table className= "blobTable leftAlign">
                         <col className="width50"></col>
                         <col className="width50"></col>
                         <tbody>
                         <tr>
-                            <td><p>Sender ID: {props.author.id.substring(0, 16)+'...'}</p></td>
-                            <td><p>Receiver ID: {props.recipient.id==null ? '(unknown)': <span>{props.recipient.id.substring(0, 25)+'...'}</span>}</p></td>
+                            <td><p>Sender</p></td>
+                            <td><p>Receiver</p></td>
+                        </tr>
+                        <tr>
+                            <td><p>ID: <span className="smaller"><Link to={"/feed/"+encode(props.author.id.substring(1, props.author.id.length-8))} className="oldLink">{props.author.id}</Link></span></p></td>
+                            <td><p>ID: {props.recipient.id==null ? '(unknown)': <span className="smaller"><Link to={"/feed/"+encode(props.recipient.id.substring(1, props.recipient.id.length-8))} className="oldLink">{props.recipient.id}</Link></span>}</p></td>
                         </tr>
                         <tr>
                             <td><p>Name: {props.author.commonName==null ? '(unknown)':props.author.commonName.name}</p></td>
@@ -91,8 +145,8 @@ function TransactionBlob(props) {
                             <td><p>Accounts: {getAccountsString(props.recipient.verifiedAccounts)}</p></td>
                         </tr>
                         <tr>
-                            <td><p>Claim: {props.isVerified ? <span className="green">verified</span>:<span className="grey">not verified</span>}</p></td>
-                            <td><p></p></td>
+                            <td><p>Signature: {props.claimData != null ? <span>{props.fromVerified ? <span className="green">verified</span>:<span className="grey">unverified</span>}</span>:<span className="grey">no claim</span>}</p></td>
+                            <td><p>Signature: {props.claimData != null ? <span>{props.toVerified ? <span className="green">verified</span>:<span className="grey">unverified</span>}</span>:<span className="grey">no claim</span>}</p></td>
                         </tr>
                         <tr>
                             <td><p>In Reserve: {props.reservesAmt < props.amount ? <span className="red">${props.reservesAmt.toFixed(2)}</span>:<span className="green">${props.reservesAmt.toFixed(2)}</span>}</p></td>
@@ -100,12 +154,12 @@ function TransactionBlob(props) {
                         </tr>
                         </tbody>
                     </table>
-                    <p>claim data <button className="mini" onClick={handleSwitchJSON}>{isJSON ? <span>see hex</span>:<span>see JSON</span>}</button><br></br><br></br><textarea rows="10" cols="65" value={(isJSON && props.claimData != null) ? getClaim(props.claimData): props.claimData}></textarea></p>
+                    <p className="center">claim data <button className="mini" onClick={handleSwitchJSON}>{isJSON ? <span>see hex</span>:<span>see JSON</span>}</button><br></br><br></br><textarea rows="10" cols="65" value={(isJSON && props.claimData != null) ? getClaim(props.claimData): props.claimData}></textarea></p>
                 </span>
                 :
                 <p></p>
                 }
-                <p>{seeDetails ? <button className="mini" onClick={handleHideDetails}>hide details</button>:<button className="mini" onClick={handleSeeDetails}>see details</button>}</p>
+                <p className="center">{seeDetails ? <button className="mini" onClick={handleHideDetails}>hide details</button>:<button className="mini" onClick={handleSeeDetails}>see details</button>}</p>
             </div>
         </div>
     );
