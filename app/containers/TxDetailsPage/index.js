@@ -131,15 +131,14 @@ export default function TxDetailsPage(props) {
     const claimName = props.match.params.claimName;
   
     const load = async () => {
-        console.log("my feed Id:", feedId);
-        console.log(key.address);
+        //console.log(key.address);
         let transaction = await getTransaction(feedId, claimName);
         setTx(transaction);
         if (transaction.length > 0) {
             setReservesAmt(await getReservesAmount(transaction[0].author.reserves.address));
-            if (transaction[0].recipient.reserves!=null) {
-                console.log(transaction[0].recipient.reserves.address);
-            }
+            //if (transaction[0].recipient.reserves!=null) {
+                //console.log(transaction[0].recipient.reserves.address);
+            //}
         }
         setLoaded(true);
     }

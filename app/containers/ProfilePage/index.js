@@ -52,10 +52,8 @@ export default function ProfilePage(props) {
 
   const [myFeed, setMyFeed] = useState(null);
   const [signer, setSigner] = useState(null);
-  const [myReserves, setMyReserves] = useState(0.0);
-  const [hasPendingPromise, setHasPendingPromise] = useState(null);
-  const [pendingPromise, setPendingPromise] = useState(null);
-  const [loopDetected, setLoopDetected] = useState(false);
+  const [myReservesAmt, setMyReservesAmt] = useState(0.0);
+  const [promisesToCommit, setPromisesToCommit] = useState([]);
 
   const [queryId, setQueryId] = useState("@");
   const [queryEmail, setQueryEmail] = useState("@gmail.com");
@@ -140,7 +138,7 @@ export default function ProfilePage(props) {
         let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
         if (r.data.data.feed != null && r.data.data.feed.reserves != null) {
             setMyFeed(r.data.data.feed);
-            setMyReserves(await getReservesAmount(r.data.data.feed.reserves.address));
+            setMyReservesAmt(await getReservesAmount(r.data.data.feed.reserves.address));
             if (r.data.data.feed.commonName != null) {
                 setNewName(r.data.data.feed.commonName.name);
             }
@@ -156,40 +154,7 @@ export default function ProfilePage(props) {
     }
   }
 
-  const checkForLoop = async () => {
-    const q1 = `query { allFeedIds }`
-    let r1 = await axios.post('http://127.0.0.1:4000', {query:q1}, {});
-    let feedIds = r1.data.data.allFeedIds;
-    if (feedIds.length != 3) {
-        return false;
-    }
-    try {
-        for (let j=0; j<feedIds.length; j++) {
-            const q2 = `query { feed(id:"`+feedIds[j]+`") {
-                assets {
-                    claimName
-                }
-                liabilities {
-                    claimName
-                }
-            }}`;
-            let r2 = await axios.post('http://127.0.0.1:4000', {query:q2}, {});
-            if (r2.data.data.feed.assets.length != 1) {
-                return false;
-            }
-            if (r2.data.data.feed.liabilities.length != 1) {
-                return false;
-            }
-        }
-    } catch(e) {
-        console.log('failed get num promises:', e)
-        return false;
-    }
-
-    return true;
-  }
-
-  const getPendingPromise = async (feedId) => {
+  const getUpdateablePendingPromises = async (feedId) => {
     const q1 = `query { allFeedIds }`
     let r1 = await axios.post('http://127.0.0.1:4000', {query:q1}, {});
     let feedIds = r1.data.data.allFeedIds;
@@ -204,10 +169,10 @@ export default function ProfilePage(props) {
         amount
         vestDate
     }}`;
+    let updateablePromises = [];
     try {
         let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
         if (r.data.data.pendingPromises!=null && r.data.data.pendingPromises.length>0) {
-            console.log("pending promises:", r.data.data.pendingPromises);
             for (let j=0; j<feedIds.length; j++) {
                 const q2 = `query { feed(id:"`+feedIds[j]+`") {
                     id
@@ -224,13 +189,10 @@ export default function ProfilePage(props) {
                     }
                 }}`;
                 let r2 = await axios.post('http://127.0.0.1:4000', {query:q2}, {});
-                console.log("check this feed out:");
-                console.log(r2.data.data.feed);
                 if (r2.data.data.feed.verifiedAccounts != null && r2.data.data.feed.verifiedAccounts.length>0) {
                     for (let i=0; i<r.data.data.pendingPromises.length; i++) {
                         if (r.data.data.pendingPromises[i].recipient.verifiedAccounts[0].handle == r2.data.data.feed.verifiedAccounts[0].handle) {
-                            setHasPendingPromise(true);
-                            setPendingPromise({id: r2.data.data.feed.id, commonName: r2.data.data.feed.commonName, reserves: r2.data.data.feed.reserves, promise: r.data.data.pendingPromises[i]});
+                            updateablePromises.push({id: r2.data.data.feed.id, commonName: r2.data.data.feed.commonName, reserves: r2.data.data.feed.reserves, promise: r.data.data.pendingPromises[i]});
                         }
                     }
                 }
@@ -239,14 +201,15 @@ export default function ProfilePage(props) {
     } catch(e) {
         console.log('error getting pending promise:', e);
     }
+
+    setPromisesToCommit(updateablePromises);
   }
 
   const load = async () => {
     if (!loaded) {
         if (key != null) {
             let ok = await getMyFeed(key.feedKey.id);
-            await getPendingPromise(key.feedKey.id);
-            setLoopDetected(await checkForLoop());
+            await getUpdateablePendingPromises(key.feedKey.id);
             if (ok) {
                 if (key.private == null) {
                     setIsMetamask(true);
@@ -353,7 +316,10 @@ export default function ProfilePage(props) {
     let promise = {type: "cashless/promise", header: {version: cashless.version, network: cashless.network}};
     let claimName = cashless.bufferToHex(cashless.randomHash());
     let issueTime = now();
-    let vestTime = issueTime+(150/**86400*/);
+    // !!!
+    // Promises vest in 300 seconds rather than 60 days
+    // !!!
+    let vestTime = issueTime+(300/*60*86400*/);
     let voidTime = vestTime+(365*86400);
     promise.from = {id: myFeed.id, commonName: myFeed.commonName, reserves: myFeed.reserves, verifiedAccounts: myFeed.verifiedAccounts};
     if (!sendToEmail) {
@@ -408,21 +374,27 @@ export default function ProfilePage(props) {
         setAmount("0.00");
         setQueryEmail("@gmail.com");
         await getMyFeed(key.feedKey.id);
+        await getUpdateablePendingPromises(key.feedKey.id);
     }
   }
 
-  const handleUpdatePending = async _evt => {
+  const handleUpdatePromise = async evt => {
+    let pendingPromise;
+    for (let i=0; i<promisesToCommit.length; i++) {
+        if (evt.target.id==promisesToCommit[i].promise.claimName) {
+            pendingPromise = promisesToCommit[i];
+            break
+        }
+    }
     let promise = {type: "cashless/promise", header: {version: cashless.version, network: cashless.network}};
-    console.log("pending promise:", pendingPromise);
     let issueTime = now();
     let vestTime = pendingPromise.promise.vestDate;
     let voidTime = vestTime+(365*86400);
     promise.from = {id: myFeed.id, commonName: myFeed.commonName, reserves: myFeed.reserves, verifiedAccounts: myFeed.verifiedAccounts};
     let claimName = pendingPromise.promise.claimName;
     let amount = pendingPromise.promise.amount;
-    console.log("amount:", amount);
     let disputeDuration = 0;
-    console.log(amount.toString(), disputeDuration, vestTime, voidTime, key.address, pendingPromise.reserves.address, claimName, emptyHash, 1);
+    //console.log(amount.toString(), disputeDuration, vestTime, voidTime, key.address, pendingPromise.reserves.address, claimName, emptyHash, 1);
     let claimData = cashless.encodeClaim(amount.toString(), disputeDuration, vestTime, voidTime, key.address, pendingPromise.reserves.address, claimName, emptyHash, 1);
     let claimSig;
     let contract = cashless.contract(providerURL, null);
@@ -446,39 +418,9 @@ export default function ProfilePage(props) {
     let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise, key:safeKey(key)}, {});
     if (res.data.status=="ok") {
         setPublishResponse("published promise!");
-        setHasPendingPromise(false);
         await getMyFeed(key.feedKey.id);
+        await getUpdateablePendingPromises(key.feedKey.id);
     }
-  }
-
-  const handleClearLoop = async _evt => {
-      let liability = JSON.parse(JSON.stringify(myFeed.liabilities[0]));
-      liability.promise = {nonce: myFeed.liabilities[0].nonce+1, claimName: myFeed.liabilities[0].claimName, denomination: "USD", amount: myFeed.liabilities[0].amount-300, vestDate: myFeed.liabilities[0].vestDate};
-      let disputeDuration = 0;
-      let claimData = cashless.encodeClaim(liability.promise.amount.toString(), disputeDuration, liability.promise.vestDate, liability.promise.vestDate+(365*86400), key.address, myFeed.liabilities[0].recipient.reserves.address, myFeed.liabilities[0].claimName, emptyHash, liability.promise.nonce);
-      let claimSig;
-      let contract = cashless.contract(providerURL, null);
-      let libContract = cashless.libContract(providerURL);
-      if (!isMetamask) {
-          contract = contract.connect(signer);
-          claimSig = await cashless.signClaim(contract, libContract, claimData);
-      } else {
-          let hash = await cashless.getClaimHash(contract, libContract, claimData);
-          let rawSig = await signer.signMessage(hash);
-          let res = ethers.utils.splitSignature(rawSig);
-          claimSig = {v: res.v, r: Uint8Array.from(Buffer.from(res.r.substring(2), 'hex')), s: Uint8Array.from(Buffer.from(res.s.substring(2), 'hex'))};
-      }
-      let j = await cashless.verifyClaimSig(contract, claimData, claimSig, true);
-      if (!j) {
-          console.log("claim signature failed validation");
-          return
-      }
-      liability.promise.fromSignature = {v: claimSig.v, r: cashless.bufferToHex(claimSig.r), s: cashless.bufferToHex(claimSig.s)};
-      liability.promise.claimData = cashless.bufferToHex(claimData);
-      let res = await axios.post('http://127.0.0.1:3000/publish', {content: liability, key:safeKey(key)}, {});
-      if (res.data.status=="ok") {
-          setPublishResponse("published loop!!");
-      }
   }
 
   useEffect(() => {
@@ -510,7 +452,7 @@ export default function ProfilePage(props) {
                     <span className="bold under"><FormattedMessage {...messages.idHeader} /></span>: {key.feedKey.id}
                 </p>
                 <p>
-                    <span className="bold under"><FormattedMessage {...messages.reservesHeader} /></span>: {'$'+myReserves.toFixed(2).toString()} <span>&nbsp;<button className="mini" onClick={handleGoWallet}>go to Wallet</button></span>
+                    <span className="bold under"><FormattedMessage {...messages.reservesHeader} /></span>: {'$'+myReservesAmt.toFixed(2).toString()} <span>&nbsp;<button className="mini" onClick={handleGoWallet}>go to Wallet</button></span>
                 </p>
                 <p>
                     <span className="bold under"><FormattedMessage {...messages.incomingHeader} /></span>: <span className="green">{'$'+getGrossAmount(myFeed.assets).toFixed(2).toString()}</span>
@@ -531,8 +473,13 @@ export default function ProfilePage(props) {
                     })}
                 </ul>
             </div>
-            {hasPendingPromise ? <div className="borderedDiv"><p>{pendingPromise.promise.recipient.verifiedAccounts[0].handle+" has claimed an account!"}<button className="mini" onClick={handleUpdatePending}>update promise</button></p></div>:<div></div>}
-            {loopDetected ? <div className="borderedDiv"><p>loop detected: <button className="mini" onClick={handleClearLoop}>accept loop</button></p></div>:<div></div>}
+            <div>
+                <ul>
+                    {promisesToCommit.map(({id, promise}) => {
+                        return <li><div className="borderedDiv"><p>{promise.recipient.verifiedAccounts[0].handle + " has verified account: "}<Link to={"/feed/"+encode(id.substring(1, id.length-8))}>{id.substring(0, 6)+'...'}</Link><button className="mini" id={promise.claimName} onClick={handleUpdatePromise}>commit promise</button></p></div></li>;
+                    })}
+                </ul>
+            </div>
             <div className="borderedDiv">
                 <p>
                     {sendToEmail==false ?
