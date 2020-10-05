@@ -36,6 +36,18 @@ const getGrossAmount = (promises) => {
     return gross;
 }
 
+const getAccountsString = (accounts) => {
+    let s = "";
+    if (accounts==null || accounts.length == 0) {
+        return '(none)';
+    }
+    for (let i=0; i< accounts.length; i++) {
+        s += accounts[i].handle + ", ";
+    }
+
+    return s.substring(0, s.length-2);
+}
+
 const emptyHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
 const providerURL = "https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey;
 
@@ -450,6 +462,9 @@ export default function ProfilePage(props) {
                 }
                 <p>
                     <span className="bold under"><FormattedMessage {...messages.idHeader} /></span>: {key.feedKey.id}
+                </p>
+                <p>
+                    <span className="bold under">Accounts</span>: {getAccountsString(myFeed.verifiedAccounts)}
                 </p>
                 <p>
                     <span className="bold under"><FormattedMessage {...messages.reservesHeader} /></span>: {'$'+myReservesAmt.toFixed(2).toString()} <span>&nbsp;<button className="mini" onClick={handleGoWallet}>go to Wallet</button></span>

@@ -21,6 +21,10 @@ const cors = require('cors');
 const { exec } = require('child_process');
 // raise errors like this - throw httpErrorInfo(status, message, properties)
 const httpErrorInfo = require('http-errors');
+const firebaseAdmin = require('./firebase');
+
+const network = "rinkeby";
+const version = 1.0;
 
 const ngrok =
   (isDev && process.env.ENABLE_TUNNEL) || argv.tunnel
@@ -124,6 +128,34 @@ app.post('/publish', async (req, res) => {
 
   return res.json({ status: 'ok' });
 });
+
+app.post('authenticatedEmail', async (req, res) => {
+    let ssbid = req.body.ssbid;
+    let token = req.body.token;
+    user = await firebaseAdmin.getUserFromToken(token);
+    if (user==null) {
+        res.json({status: 'fail'});
+    }
+    console.log('check user:');
+    console.log(user);
+    let ok = await firebaseAdmin.setUserDocument(user.email, ssbid);
+    if (!ok) {
+        res.json({status: 'fail'});
+    }
+    let key = ssb.client().keys;
+    let content =  {feed: {id: ssbid}, name: {type: "ACCOUNT", accountType:"GMAIL", handle: user.email}, type: "cashless/identity", header: {version: version, network: network}, evidence:null};
+    try {
+        await ssb.client().identities.publishAs({
+          key,
+          private: false,
+          content: content,
+        });
+    } catch (e) {
+        console.log('publish failed:', e);
+        return res.json({ status: 'fail' });
+    }
+    res.json({status: 'ok'});
+})
 
 app.use('/transactions', async (_req, res) => {
   try {

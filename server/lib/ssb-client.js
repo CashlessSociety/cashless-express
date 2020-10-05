@@ -11,7 +11,7 @@ let ssbClient;
 let syncing = false;
 let indexing = true;
 
-const mode = process.env.MODE || "standalone";
+const mode = process.env.MODE;
 const ssbSecret = ssbKeys.loadOrCreateSync(`${ssbFolder()}/secret`);
 
 const connectClient = (ssbSecret) => {

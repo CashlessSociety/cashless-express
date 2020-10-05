@@ -25,6 +25,18 @@ const getGrossAmount = (promises) => {
     return gross;
 }
 
+const getAccountsString = (accounts) => {
+    let s = "";
+    if (accounts==null || accounts.length == 0) {
+        return '(none)';
+    }
+    for (let i=0; i< accounts.length; i++) {
+        s += accounts[i].handle + ", ";
+    }
+
+    return s.substring(0, s.length-2);
+}
+
 const now = () => {
     return Math.floor(Date.now() / 1000);
 }
@@ -160,7 +172,10 @@ export default function PortfolioPage(props) {
                     <span className="bold under"><FormattedMessage {...messages.idHeader} /></span>: {myFeed.id}
                 </p>
                 <p>
-                    <span className="bold under"><FormattedMessage {...messages.reservesHeader} /></span>: {'$'+myReserves.toFixed(2).toString()}
+                    <span className="bold under">Accounts</span>: {getAccountsString(myFeed.verifiedAccounts)}
+                </p>
+                <p>
+                    <span className="bold under"><FormattedMessage {...messages.reservesHeader} /></span>: {'$'+myReserves.toFixed(2).toString()} ({myFeed.reserves.address})
                 </p>
                 <p>
                     <span className="bold under"><FormattedMessage {...messages.incomingHeader} /></span>: <span className="green">{'$'+getGrossAmount(myFeed.assets).toFixed(2).toString()}</span>

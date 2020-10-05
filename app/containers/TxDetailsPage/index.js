@@ -168,7 +168,7 @@ export default function TxDetailsPage(props) {
                     fromSignature = {claim.fromSignature}
                     nonce = {nonce}
                     claimName = {claimName}
-                    isMyAsset = {(recipient.reserves!=null) && (recipient.reserves.address==key.address)}
+                    isMyAsset = {(recipient.reserves!=null && key!=null) && (recipient.reserves.address==key.address)}
                 />;
                 })}
         </div>

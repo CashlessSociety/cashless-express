@@ -56,6 +56,10 @@
     margin-bottom: 2em;
 }
 
+.long {
+    width:60em;
+}
+
 .halfwidth {
     width: 35em;
 }
@@ -163,6 +167,11 @@ h1 {
 
 .red {
     color: red;
+}
+
+.leftAlign {
+    text-align: left;
+    padding-left: 2em;
 }
 
 .oldLink {

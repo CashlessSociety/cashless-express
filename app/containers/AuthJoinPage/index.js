@@ -1,17 +1,19 @@
 
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import * as ethers from 'ethers';
 import axios from 'axios';
 import * as ssbKeys from 'ssb-keys';
 import * as cashless from 'containers/App/cashless';
 import { useKeyFileStickyState, safeKey } from 'utils/stateUtils';
+import { signInWithGoogle, auth } from 'utils/firebase';
 import 'containers/App/app.css';
 
 export default function AuthJoinPage(props) {
     const [key, setKey] = useKeyFileStickyState();
-    const email = props.match.params.emailStub+"@gmail.com";
+    const [loaded, setLoaded] = useState(false);
+    const [idToken, setIdToken] = useState("");
 
     const newKey = async (useMetamask) => {
       let key = ssbKeys.generate("ed25519", cashless.randomHash());
@@ -19,12 +21,10 @@ export default function AuthJoinPage(props) {
       let address;
       let priv;
       if (useMetamask) {
-          console.log("using metamask!");
           await window.ethereum.enable();
           const provider = new ethers.providers.Web3Provider(window.ethereum);
           signer = provider.getSigner();
           address = await signer.getAddress();
-          console.log("check address:", address);
           priv = null;
       } else {
           let ethKey = cashless.bufferToHex(cashless.randomHash());
@@ -101,15 +101,23 @@ export default function AuthJoinPage(props) {
         var url = window.URL.createObjectURL(data);
         link.href = url;
         link.click();
-      }
+    }
+
+    const handleGoogleAuth = async _evt => {
+        signInWithGoogle();
+        auth.onAuthStateChanged(async user => {
+            if (user) {
+                console.log("got here!");
+                let tok = await user.getIdToken(true);
+                if (tok) {
+                    setIdToken(await user.getIdToken(true));
+                }
+            }
+        });
+    }
   
     const load = async () => {
-        let s;
-        for (let i=0; i<1000000; i++) {
-            s += 1;
-        }
-        console.log(s);
-        await handleJoinNewWallet(false);
+        setLoaded(true);
     }
 
     useEffect(() => {
@@ -122,7 +130,13 @@ export default function AuthJoinPage(props) {
             <title>Join Page</title>
             <meta name="description" content="My homepage" />
         </Helmet>
-        <div className="outerDiv center">authenticating...</div>
+        {loaded ? 
+        <div className="outerDiv center">
+            <p>{<button className="mini" onClick={handleGoogleAuth}>sign in with google</button>}</p>
+            <p>{idToken!="" ? "token: "+idToken:<span></span>}</p>
+        </div>
+        :
+        <div className="outerDiv center">loading...</div>}
         </article>
     );
 }

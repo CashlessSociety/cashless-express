@@ -18,6 +18,7 @@ import WalletPage from 'containers/WalletPage/Loadable';
 import TxDetailsPage from 'containers/TxDetailsPage/Loadable';
 import PortfolioPage from 'containers/PortfolioPage/Loadable';
 import AuthJoinPage from 'containers/AuthJoinPage/Loadable';
+import ExplorePage from 'containers/ExplorePage/Loadable';
 import Header from 'components/Header';
 //import Footer from 'components/Footer'; 
 import './app.css';
@@ -38,6 +39,7 @@ export default function App() {
             <Route exact path="/profile" component={ProfilePage} />
             <Route exact path="/admin" component={AdminPage} />
             <Route exact path="/wallet" component={WalletPage} />
+            <Route exact path="/explore" component={ExplorePage} />
             <Route path="/promise/:feedId/:claimName" component={TxDetailsPage} />
             <Route path="/feed/:id" component={PortfolioPage} />
             <Route path="/authorized/:emailStub" component={AuthJoinPage}/>
