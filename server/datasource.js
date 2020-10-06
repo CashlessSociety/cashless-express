@@ -121,20 +121,15 @@ class ssbFlumeAPI extends DataSource {
                 rseq = idMsgs[j].sequence;
             }
             if (idMsgs[j].name.type == "ACCOUNT") {
-                // NOTE assumes the pub on this server is the "trusted" feed publishing identity links aftter firebase auth
-                // !!!!
-                // AUTHENTICAITON currently disabled
-                // !!!!
-                /*let msgs = await this.getIdMsgsByFeedId({feedId: ssb.client().id});
+                let msgs = await this.getIdMsgsByFeedId({feedId: ssb.client().id});
                 for (let k=0; k<msgs.length; k++) {
-                    if (msgs[k].id == idMsgs[j].name.evidence.id) {
-                        if (msgs[k].feed.id==feedId && msgs[k].name.type=="ACCOUNT" && msg.name.handle==idMsgs[j].name.handle) {
+                    if (msgs[k].id == idMsgs[j].evidence.id) {
+                        if (msgs[k].feed.id==feedId && msgs[k].name.type=="ACCOUNT" && msgs[k].name.handle==idMsgs[j].name.handle) {
                             accounts.push(idMsgs[j].name);
                         }
                         break
                     }
-                }*/
-                accounts.push(idMsgs[j].name);
+                }
             }
         }
       }
@@ -143,8 +138,13 @@ class ssbFlumeAPI extends DataSource {
       for (let i=0; i<allPromises.length; i++) {
           if (allPromises[i].isLatest && allPromises[i].recipient.id == feedId) {
             promised.push(allPromises[i]);
-          } else if (allPromises[i].isLatest && allPromises[i].recipient.id==null && accounts.length==1 && allPromises[i].recipient.verifiedAccounts[0].handle == accounts[0].handle) {
-            promised.push(allPromises[i]);
+          } else if (allPromises[i].isLatest && allPromises[i].recipient.id==null) {
+            for (let z=0; z<accounts.length; z++) {
+                if (accounts[z].handle==allPromises[i].recipient.verifiedAccounts[0].handle && allPromises[i].recipient.verifiedAccounts[0].accountType==accounts[z].accountType) {
+                    promised.push(allPromises[i]);
+                    break
+                }
+            }
           }
       }
       let promises = await this.getPromisesByFeedId({ feedId });
@@ -301,7 +301,7 @@ class ssbFlumeAPI extends DataSource {
         let highest = 0;
         for (let i=0; i<promises.length; i++) {
             if (promises[i].nonce > highest) {
-                highest = promises.nonce
+                highest = promises[i].nonce;
             }
         }
         for (let j=0; j<promises.length; j++) {

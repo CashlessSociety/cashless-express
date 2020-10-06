@@ -42,7 +42,7 @@ export default function App() {
             <Route exact path="/explore" component={ExplorePage} />
             <Route path="/promise/:feedId/:claimName" component={TxDetailsPage} />
             <Route path="/feed/:id" component={PortfolioPage} />
-            <Route path="/authorized/:emailStub" component={AuthJoinPage}/>
+            <Route path="/join/auth/:email" component={AuthJoinPage}/>
             <Route path="" component={NotFoundPage} />
         </Switch>  
         </div>

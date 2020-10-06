@@ -15,7 +15,7 @@ module.exports = {
             if (msg.type == "RESERVES") {
                 return 'ReservesAddress';
             } else if (msg.type == "ACCOUNT") {
-                return 'Account';
+                return 'AccountHandle';
             } else {
                 return 'CommonName';
             }

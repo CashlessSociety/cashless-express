@@ -169,6 +169,14 @@ h1 {
     color: red;
 }
 
+.grey {
+    color: grey;
+}
+
+.yellow {
+    color: rgb(184, 147, 28);
+}
+
 .leftAlign {
     text-align: left;
     padding-left: 2em;

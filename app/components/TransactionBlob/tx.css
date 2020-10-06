@@ -97,3 +97,11 @@ p {
 .red {
     color: red;
 }
+
+.yellow {
+    color: rgb(184, 147, 28);
+}
+
+.bgGrey {
+    background-color: grey !important;
+}

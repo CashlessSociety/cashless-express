@@ -325,6 +325,6 @@ exports.randomHash = () => {
     return hash.digest();
 }
   
-exports.network = "rinkeby";
-exports.version = 1.0;
-exports.infuraAPIKey = "fef5fecf13fb489387683541edfbd958"; // TODO: come from env.
+exports.network = process.env.CASHLESS_NETWORK || "rinkeby";
+exports.version = Number(process.env.CASHLESS_VERSION) || 1.0;
+exports.infuraAPIKey = process.env.INFURA_API_KEY || "fef5fecf13fb489387683541edfbd958";

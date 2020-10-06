@@ -47,6 +47,8 @@ const getTransaction = async (feedId, claimName) => {
             vestDate
             nonce
             claimName
+            isLatest
+            sequence
             author {
                 id
                 reserves {
@@ -93,6 +95,7 @@ const getTransaction = async (feedId, claimName) => {
             let promises = [];
             for (let i=0; i<r.data.data.promise.length; i++) {
                 if (feedId == r.data.data.promise[i].author.id) {
+                    console.log(r.data.data.promise[i].isLatest, r.data.data.promise[i].sequence);
                     try {
                         r.data.data.promise[i].fromSigCheck = await verifySig(r.data.data.promise[i].claim.data, r.data.data.promise[i].claim.fromSignature, true);
                         r.data.data.promise[i].toSigCheck = await verifySig(r.data.data.promise[i].claim.data, r.data.data.promise[i].claim.toSignature, false);
@@ -155,7 +158,7 @@ export default function TxDetailsPage(props) {
         </Helmet>
         {loaded ?
         <div className="outerDiv center">
-            {tx.map(({ author, amount, recipient, vestDate, claim, fromSigCheck, toSigCheck, nonce }) => {
+            {tx.map(({ author, amount, recipient, vestDate, claim, fromSigCheck, toSigCheck, nonce, isLatest }) => {
                 return <TransactionBlob 
                     author = {author}
                     amount = {amount}
@@ -169,8 +172,10 @@ export default function TxDetailsPage(props) {
                     nonce = {nonce}
                     claimName = {claimName}
                     isMyAsset = {(recipient.reserves!=null && key!=null) && (recipient.reserves.address==key.address)}
+                    isLatest = {isLatest}
                 />;
-                })}
+                })
+            }
         </div>
         :
         <div className="outerDiv center">loading...</div>

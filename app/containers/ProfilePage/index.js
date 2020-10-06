@@ -21,19 +21,24 @@ const uuid = () => {
       var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
       return v.toString(16);
     });
-  }
+}
 
 const now = () => {
     return Math.floor(Date.now() / 1000);
 }
 
-const getGrossAmount = (promises) => {
-    let gross = 0
+const parsePromisesGross = (promises) => {
+    let gross = 0;
+    let grossPending = 0;
     for (let i=0; i<promises.length; i++) {
-        gross += promises[i].amount
+        if (promises[i].nonce > 0) {
+            gross += promises[i].amount;
+        } else if (promises[i].nonce==0) {
+            grossPending += promises[i].amount;
+        }
     }
 
-    return gross;
+    return {gross: gross, grossPending: grossPending};
 }
 
 const getAccountsString = (accounts) => {
@@ -331,7 +336,7 @@ export default function ProfilePage(props) {
     // !!!
     // Promises vest in 300 seconds rather than 60 days
     // !!!
-    let vestTime = issueTime+(300/*60*86400*/);
+    let vestTime = issueTime+(60*86400 /*300*/);
     let voidTime = vestTime+(365*86400);
     promise.from = {id: myFeed.id, commonName: myFeed.commonName, reserves: myFeed.reserves, verifiedAccounts: myFeed.verifiedAccounts};
     if (!sendToEmail) {
@@ -367,11 +372,14 @@ export default function ProfilePage(props) {
         promise.to = queryFeed;
         promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: cashless.bufferToHex(claimSig.r), s: cashless.bufferToHex(claimSig.s)}, claimData:cashless.bufferToHex(claimData)};
     } else {
-        if (queryEmail.length>10 && queryEmail.substring(queryEmail.length-10, queryEmail.length) != "@gmail.com") {
+        //
+        // Enforce GMAIL emails ONLY... but there are google accounts that dont end with @gmail.com
+        //
+        /*if (queryEmail.length>10 && queryEmail.substring(queryEmail.length-10, queryEmail.length) != "@gmail.com") {
             setPublishResponse("cannot promise to: "+queryEmail+ "(gmail only)");
             return
-        }
-        promise.to = {verifiedAccounts: [{handle: queryEmail, accountType:"GMAIL"}]};
+        }*/
+        promise.to = {verifiedAccounts: [{handle: queryEmail, accountType:"GOOGLE"}]};
         promise.promise = {nonce:0, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime};
     }
     let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise, key:safeKey(key)}, {});
@@ -435,6 +443,20 @@ export default function ProfilePage(props) {
     }
   }
 
+  const renderAssets = () => {
+      let promiseAmounts = parsePromisesGross(myFeed.assets);
+      return (
+        <span><span className="green">${promiseAmounts.gross.toFixed(2)}</span> {promiseAmounts.grossPending>0 ? <span>{'(pending: '}<span className="yellow">${promiseAmounts.grossPending.toFixed(2)}</span>{')'}</span>:<span></span>}</span>
+      );
+  }
+
+  const renderLiabilities = () => {
+    let promiseAmounts = parsePromisesGross(myFeed.liabilities);
+    return (
+      <span><span className="red">${promiseAmounts.gross.toFixed(2)}</span> {promiseAmounts.grossPending>0 ? <span>{'(pending: '}<span className="yellow">${promiseAmounts.grossPending.toFixed(2)}</span>{')'}</span>:<span></span>}</span>
+    );
+  }
+
   useEffect(() => {
     (async () => await load())();
   }, []);
@@ -467,10 +489,10 @@ export default function ProfilePage(props) {
                     <span className="bold under">Accounts</span>: {getAccountsString(myFeed.verifiedAccounts)}
                 </p>
                 <p>
-                    <span className="bold under"><FormattedMessage {...messages.reservesHeader} /></span>: {'$'+myReservesAmt.toFixed(2).toString()} <span>&nbsp;<button className="mini" onClick={handleGoWallet}>go to Wallet</button></span>
+                    <span className="bold under"><FormattedMessage {...messages.reservesHeader} /></span>: {'$'+myReservesAmt.toFixed(2)} <span>&nbsp;<button className="mini" onClick={handleGoWallet}>go to Wallet</button></span>
                 </p>
                 <p>
-                    <span className="bold under"><FormattedMessage {...messages.incomingHeader} /></span>: <span className="green">{'$'+getGrossAmount(myFeed.assets).toFixed(2).toString()}</span>
+                    <span className="bold under"><FormattedMessage {...messages.incomingHeader} /></span>: {renderAssets()}
                 </p>
                 <ul>
                     {myFeed.assets.map(({ author, claimName, amount, vestDate }) => {
@@ -479,7 +501,7 @@ export default function ProfilePage(props) {
                     })}
                 </ul>
                 <p>
-                    <span className="bold under"><FormattedMessage {...messages.outgoingHeader} /></span>: <span className="red">{'$'+getGrossAmount(myFeed.liabilities).toFixed(2).toString()}</span>
+                    <span className="bold under"><FormattedMessage {...messages.outgoingHeader} /></span>: {renderLiabilities()}
                 </p>
                 <ul>
                     {myFeed.liabilities.map(({ recipient, claimName, amount, vestDate })=> {

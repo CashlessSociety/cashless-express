@@ -29,7 +29,6 @@ const getAccountsString = (accounts) => {
     for (let i=0; i< accounts.length; i++) {
         s += accounts[i].handle + ", ";
     }
-
     return s.substring(0, s.length-2);
 }
 
@@ -73,14 +72,11 @@ function TransactionBlob(props) {
             let res = ethers.utils.splitSignature(rawSig);
             claimSig = {v: res.v, r: Uint8Array.from(Buffer.from(res.r.substring(2), 'hex')), s: Uint8Array.from(Buffer.from(res.s.substring(2), 'hex'))};
         }
-        console.log("check sig:", claimSig);
         let j = await cashless.verifyClaimSig(contract, data, claimSig, false);
-        console.log(j);
         if (!j) {
             console.log("claim signature failed validation");
             return
         }
-        console.log("signed!");
         let receiverSig = claimSig;
         let senderSig = {v: props.fromSignature.v, r: Uint8Array.from(Buffer.from(props.fromSignature.r.substring(2), 'hex')), s: Uint8Array.from(Buffer.from(props.fromSignature.s.substring(2), 'hex'))};
         let txh;
@@ -99,7 +95,7 @@ function TransactionBlob(props) {
     }
 
     return (
-        <div className="blobOuter center">
+        <div className={props.isLatest ? "blobOuter center": "bgGrey blobOuter center"}>
             <div>
                 <table className= "blobTable leftAlign">
                     <col className="width60"></col>
@@ -107,16 +103,16 @@ function TransactionBlob(props) {
                     <tbody>
                     <tr>
                         <td><h1><strong>ID:{props.claimName}</strong></h1></td>
-                        <td><h1><strong>Nonce: {props.nonce}</strong></h1></td>
+                        <td><h1><strong>Nonce: {props.nonce==0 ? <span className="yellow">(pending)</span>:props.nonce}</strong></h1></td>
                     </tr>
                     </tbody>
                 </table>
                 <p className="largeP">Amount:  ${props.amount.toFixed(2)}</p>
-                <p className="largeP">To: {props.recipient.id == null ? props.recipient.verifiedAccounts[0].handle:<Link to={"/feed/"+encode(props.recipient.id.substring(1, props.recipient.id.length-8))} className="oldLink">{props.recipient.id.substring(0, 8)+'...'}</Link>}</p>
+                <p className="largeP">To: {props.recipient.id == null ? props.recipient.verifiedAccounts[0].handle:<Link to={"/feed/"+encode(props.recipient.id.substring(1, props.recipient.id.length-8))} className="oldLink">{props.recipient.commonName==null ? props.recipient.id.substring(0, 8)+'...':<span>{props.recipient.commonName.name==null ? props.recipient.id.substring(0, 8)+'...':props.recipient.commonName.name}</span>}</Link>}</p>
                 <p className="largeP">From: <Link to={"/feed/"+encode(props.author.id.substring(1, props.author.id.length-8))} className="oldLink">{props.author.commonName == null ? props.author.id.substring(0, 10)+'...': props.author.commonName.name}</Link></p>
-                <p className="largeP">Risk of Default: {props.claimData != null ? <span>{(props.reservesAmt < props.amount) ? <span className="red">high</span>:<span className="green">low</span>}</span>: <span className="grey">none</span>}</p>
-                <p className="largeP">Due Date: {Number(props.vestDate) - now() > 0 ? <span>{(new Date(props.vestDate*1000)).toLocaleString()}</span>:<span className="green">Available Now</span>}</p>
-                <span>{(props.isMyAsset) && (Number(props.vestDate) - now() < 0) ? <p><button className="mini" onClick={handleClaimPromise}>claim!</button></p>:<p></p>}</span>
+                {props.isLatest ? <p className="largeP">Risk of Default: {props.claimData != null ? <span>{(props.reservesAmt < props.amount) ? <span className="red">high</span>:<span className="green">low</span>}</span>: <span className="grey">none</span>}</p>: <p className="largeP"></p>}
+                {props.isLatest ? <p className="largeP">Due Date: {Number(props.vestDate) - now() > 0 ? <span>{(new Date(props.vestDate*1000)).toLocaleString()}</span>:<span className="green">Available Now</span>} {props.nonce==0 ? <span className="yellow">(pending)</span>:<span></span>}</p>: <p className="largeP"></p>}
+                <span>{(props.isMyAsset) && (Number(props.vestDate) - now() < 0) && (props.isLatest) ? <p><button className="mini" onClick={handleClaimPromise}>claim!</button></p>:<p></p>}</span>
                 {seeDetails ?
                 <span>
                     <br></br>
@@ -159,7 +155,7 @@ function TransactionBlob(props) {
                 :
                 <p></p>
                 }
-                <p className="center">{seeDetails ? <button className="mini" onClick={handleHideDetails}>hide details</button>:<button className="mini" onClick={handleSeeDetails}>see details</button>}</p>
+                <p className="center">{seeDetails ? <button className="mini" onClick={handleHideDetails}>see less</button>:<button className="mini" onClick={handleSeeDetails}>see more</button>}</p>
             </div>
         </div>
     );

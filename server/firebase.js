@@ -6,7 +6,7 @@ admin.initializeApp({
     databaseURL: "https://cashless-firebase-00.firebaseio.com",
 });
 
-exports.getUserfromToken = async idToken => {
+exports.getUserFromToken = async idToken => {
     try {
         let decodedToken = await admin.auth().verifyIdToken(idToken);
         let u = await admin.auth().getUser(decodedToken.uid);

@@ -175,7 +175,7 @@ const typeDefs = gql`
 
     enum AccountType {
         FACEBOOK
-        GMAIL
+        GOOGLE
         TWITTER
     }
 

@@ -9,12 +9,14 @@ const setup = require('./middlewares/frontendMiddleware');
 const isDev = process.env.NODE_ENV !== 'production';
 const ssb = require('./lib/ssb-client');
 const https = require('https');
+const ssbKeys = require("ssb-keys");
+const { ssbFolder } = require("./lib/utils");
 const app = express();
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const fileUpload = require('express-fileupload');
 const cookieEncrypter = require('cookie-encrypter');
-const axios = require('axios');
+//const axios = require('axios');
 const fs = require('fs');
 const { sentry } = require('./lib/errors');
 const cors = require('cors');
@@ -23,8 +25,9 @@ const { exec } = require('child_process');
 const httpErrorInfo = require('http-errors');
 const firebaseAdmin = require('./firebase');
 
-const network = "rinkeby";
-const version = 1.0;
+const network = process.env.CASHLESS_NETWORK || "rinkeby";
+const version = Number(process.env.CASHLESS_VERSION) || 1.0;
+const ssbSecret = ssbKeys.loadOrCreateSync(`${ssbFolder()}/secret`);
 
 const ngrok =
   (isDev && process.env.ENABLE_TUNNEL) || argv.tunnel
@@ -117,7 +120,7 @@ app.post('/publish', async (req, res) => {
   }
   try {
     await ssb.client().identities.publishAs({
-      key,
+      key: key,
       private: false,
       content: req.body.content,
     });
@@ -129,24 +132,21 @@ app.post('/publish', async (req, res) => {
   return res.json({ status: 'ok' });
 });
 
-app.post('authenticatedEmail', async (req, res) => {
-    let ssbid = req.body.ssbid;
-    let token = req.body.token;
+app.post('/authenticatedEmail', async (req, res) => {
+    let ssbid = req.body.ssbIdentity;
+    let token = req.body.firebaseToken;
     user = await firebaseAdmin.getUserFromToken(token);
     if (user==null) {
-        res.json({status: 'fail'});
+        return res.json({status: 'fail'});
     }
-    console.log('check user:');
-    console.log(user);
     let ok = await firebaseAdmin.setUserDocument(user.email, ssbid);
     if (!ok) {
-        res.json({status: 'fail'});
+        return res.json({status: 'fail'});
     }
-    let key = ssb.client().keys;
-    let content =  {feed: {id: ssbid}, name: {type: "ACCOUNT", accountType:"GMAIL", handle: user.email}, type: "cashless/identity", header: {version: version, network: network}, evidence:null};
+    let content =  {feed: {id: ssbid}, name: {type: "ACCOUNT", accountType:"GOOGLE", handle: user.email}, type: "cashless/identity", header: {version: version, network: network}, evidence:null};
     try {
         await ssb.client().identities.publishAs({
-          key,
+          key: ssbSecret,
           private: false,
           content: content,
         });
@@ -154,86 +154,9 @@ app.post('authenticatedEmail', async (req, res) => {
         console.log('publish failed:', e);
         return res.json({ status: 'fail' });
     }
-    res.json({status: 'ok'});
+    
+    return res.json({status: 'ok', verifierId: ssb.client().id});
 })
-
-app.use('/transactions', async (_req, res) => {
-  try {
-    const query = `
-        query { allPromises {
-            id
-            author {
-                id
-                commonName {
-                    name
-                }
-                reserves {
-                    address
-                }
-            }
-            recipient {
-                id
-                commonName {
-                    name
-                }
-                reserves {
-                    address
-                }
-                verifiedAccounts {
-                    accountType
-                    handle
-                }
-            }
-            sequence
-            claimName
-            amount
-            denomination
-            isLatest
-            nonce
-            claim {
-                data
-                fromSignature {
-                    v
-                    r
-                    s
-                }
-            }
-        }}`;
-
-    const r = await axios.post('http://127.0.0.1:4000', { query }, {});
-    return res.json(r.data.data.allPromises);
-  } catch (e) {
-    console.log(e);
-    return res.json({ status: 'fail' });
-  }
-});
-
-app.use('/identities', async (_req, res) => {
-  try {
-    const query = `query  { allIdMsgs {
-            author {
-                id
-            }
-            name {
-              type
-              ... on ReservesAddress {
-                address
-              }
-              ... on CommonName {
-                name
-                id
-              }
-            }
-          }
-        }`;
-
-    const r = await axios.post('http://127.0.0.1:4000', { query }, {});
-    return res.json(r.data.data.allIdMsgs);
-  } catch (e) {
-    console.log(e);
-    return res.json({ status: 'fail' });
-  }
-});
 
 app.post('/uploadAdminKeyfile', (req, res) => {
   // accessing the file
@@ -378,3 +301,82 @@ if (process.env.HTTPS) {
 }
 
 module.exports = expressServer;
+
+/*app.use('/transactions', async (_req, res) => {
+  try {
+    const query = `
+        query { allPromises {
+            id
+            author {
+                id
+                commonName {
+                    name
+                }
+                reserves {
+                    address
+                }
+            }
+            recipient {
+                id
+                commonName {
+                    name
+                }
+                reserves {
+                    address
+                }
+                verifiedAccounts {
+                    accountType
+                    handle
+                }
+            }
+            sequence
+            claimName
+            amount
+            denomination
+            isLatest
+            nonce
+            claim {
+                data
+                fromSignature {
+                    v
+                    r
+                    s
+                }
+            }
+        }}`;
+
+    const r = await axios.post('http://127.0.0.1:4000', { query }, {});
+    return res.json(r.data.data.allPromises);
+  } catch (e) {
+    console.log(e);
+    return res.json({ status: 'fail' });
+  }
+});
+
+app.use('/identities', async (_req, res) => {
+  try {
+    const query = `query  { allIdMsgs {
+            author {
+                id
+            }
+            name {
+              type
+              ... on ReservesAddress {
+                address
+              }
+              ... on CommonName {
+                name
+                id
+              }
+            }
+          }
+        }`;
+
+    const r = await axios.post('http://127.0.0.1:4000', { query }, {});
+    return res.json(r.data.data.allIdMsgs);
+  } catch (e) {
+    console.log(e);
+    return res.json({ status: 'fail' });
+  }
+});
+*/

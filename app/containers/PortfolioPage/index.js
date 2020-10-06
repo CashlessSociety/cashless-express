@@ -16,13 +16,18 @@ import messages from './messages';
 import { Link } from 'react-router-dom';
 import 'containers/App/app.css';
 
-const getGrossAmount = (promises) => {
-    let gross = 0
+const parsePromisesGross = (promises) => {
+    let gross = 0;
+    let grossPending = 0;
     for (let i=0; i<promises.length; i++) {
-        gross += promises[i].amount
+        if (promises[i].nonce > 0) {
+            gross += promises[i].amount;
+        } else if (promises[i].nonce==0) {
+            grossPending += promises[i].amount;
+        }
     }
 
-    return gross;
+    return {gross: gross, grossPending: grossPending};
 }
 
 const getAccountsString = (accounts) => {
@@ -142,9 +147,22 @@ export default function PortfolioPage(props) {
     }
   }
 
+  const renderAssets = () => {
+      let promiseAmounts = parsePromisesGross(myFeed.assets);
+      return (
+        <span><span className="green">${promiseAmounts.gross.toFixed(2)}</span> {promiseAmounts.grossPending>0 ? <span>{'(pending: '}<span className="yellow">${promiseAmounts.grossPending.toFixed(2)}</span>{')'}</span>:<span></span>}</span>
+      );
+  }
+
+  const renderLiabilities = () => {
+    let promiseAmounts = parsePromisesGross(myFeed.liabilities);
+    return (
+      <span><span className="red">${promiseAmounts.gross.toFixed(2)}</span> {promiseAmounts.grossPending>0 ? <span>{'(pending: '}<span className="yellow">${promiseAmounts.grossPending.toFixed(2)}</span>{')'}</span>:<span></span>}</span>
+    );
+  }
+
   const load = async () => {
     if (!loaded) {
-        console.log("my feed id:", feedId);
         let ok = await getFeed(feedId);
         if (ok) {
             setLoaded(true);
@@ -178,7 +196,7 @@ export default function PortfolioPage(props) {
                     <span className="bold under"><FormattedMessage {...messages.reservesHeader} /></span>: {'$'+myReserves.toFixed(2).toString()} ({myFeed.reserves.address})
                 </p>
                 <p>
-                    <span className="bold under"><FormattedMessage {...messages.incomingHeader} /></span>: <span className="green">{'$'+getGrossAmount(myFeed.assets).toFixed(2).toString()}</span>
+                    <span className="bold under"><FormattedMessage {...messages.incomingHeader} /></span>: {renderAssets()}
                 </p>
                 <ul>
                     {myFeed.assets.map(({ author, claimName, amount, vestDate }) => {
@@ -187,7 +205,7 @@ export default function PortfolioPage(props) {
                     })}
                 </ul>
                 <p>
-                    <span className="bold under"><FormattedMessage {...messages.outgoingHeader} /></span>: <span className="red">{'$'+getGrossAmount(myFeed.liabilities).toFixed(2).toString()}</span>
+                    <span className="bold under"><FormattedMessage {...messages.outgoingHeader} /></span>: {renderLiabilities()}
                 </p>
                 <ul>
                     {myFeed.liabilities.map(({ recipient, claimName, amount, vestDate })=> {
