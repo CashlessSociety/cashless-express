@@ -175,7 +175,7 @@ export default function ProfilePage(props) {
     const q1 = `query { allFeedIds }`
     let r1 = await axios.post('http://127.0.0.1:4000', {query:q1}, {});
     let feedIds = r1.data.data.allFeedIds;
-    const query = `query { pendingPromises(id:"`+feedId+`") {
+    const query = `query { pendingPromises(feedId:"`+feedId+`") {
         claimName
         recipient {
             verifiedAccounts {
@@ -486,7 +486,7 @@ export default function ProfilePage(props) {
                     <span className="bold under"><FormattedMessage {...messages.idHeader} /></span>: {key.feedKey.id}
                 </p>
                 <p>
-                    <span className="bold under">Accounts</span>: {getAccountsString(myFeed.verifiedAccounts)}
+                    <span className="bold under">Handles</span>: {getAccountsString(myFeed.verifiedAccounts)}
                 </p>
                 <p>
                     <span className="bold under"><FormattedMessage {...messages.reservesHeader} /></span>: {'$'+myReservesAmt.toFixed(2)} <span>&nbsp;<button className="mini" onClick={handleGoWallet}>go to Wallet</button></span>

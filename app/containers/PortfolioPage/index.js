@@ -190,7 +190,7 @@ export default function PortfolioPage(props) {
                     <span className="bold under"><FormattedMessage {...messages.idHeader} /></span>: {myFeed.id}
                 </p>
                 <p>
-                    <span className="bold under">Accounts</span>: {getAccountsString(myFeed.verifiedAccounts)}
+                    <span className="bold under">Handles</span>: {getAccountsString(myFeed.verifiedAccounts)}
                 </p>
                 <p>
                     <span className="bold under"><FormattedMessage {...messages.reservesHeader} /></span>: {'$'+myReserves.toFixed(2).toString()} ({myFeed.reserves.address})

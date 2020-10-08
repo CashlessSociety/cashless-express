@@ -279,10 +279,11 @@ class ssbFlumeAPI extends DataSource {
     }
   }
 
-  async getPromise({ claimName }) {
+  async getPromiseChain({ claimName, feedId }) {
     const myQuery = [{
         "$filter": {
         value: {
+            author: feedId,
             content: {
                 promise: {
                     claimName: claimName
@@ -316,6 +317,19 @@ class ssbFlumeAPI extends DataSource {
         console.log("ERROR QUERYING FLUME DB:", e);
         return [];
     }
+  }
+
+  async getPromise({ claimName, feedId, nonce }) {
+    let promiseChain = await this.getPromiseChain({claimName, feedId});
+    let promise;
+    for (let i=0; i<promiseChain.length; i++) {
+        if (promiseChain[i].nonce==nonce) {
+            promise = promiseChain[i];
+            break
+        }
+    }
+
+    return promise;
   }
 
   async getFeedIds() {

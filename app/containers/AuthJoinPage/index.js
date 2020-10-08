@@ -199,39 +199,25 @@ export default function AuthJoinPage(props) {
         let feedIds = r1.data.data.allFeedIds;
         let claims = [];
         for (let j=0;j<feedIds.length; j++) {
-            let q2 = `query { pendingPromises(id:"`+feedIds[j]+`") {
+            let q2 = `query { pendingPromises(feedId:"`+feedIds[j]+`") {
                 claimName
-                isLatest
+                nonce
+                author {
+                    id
+                }
                 recipient {
                     verifiedAccounts {
                         handle
                         accountType
                     }
                 }
-                author {
-                    id
-                    commonName {
-                        name
-                        id
-                    }
-                    reserves {
-                        address
-                    }
-                    verifiedAccounts {
-                        handle
-                        accountType
-                    }
-                }
                 amount
-                vestDate
-                nonce
             }}`;
             let r2 = await axios.post('http://127.0.0.1:4000', {query:q2}, {});
             if (r2.data.data.pendingPromises != null && r2.data.data.pendingPromises.length>0) {
                 let promises = r2.data.data.pendingPromises;
                 for (let i=0; i<promises.length; i++) {
-                    if (promises[i].recipient.verifiedAccounts[0].handle == email) {
-                        promises[i].reservesAmt = await getReservesAmount(promises[i].author.reserves.address);
+                    if (promises[i].recipient.verifiedAccounts[0].handle == email && promises[i].recipient.verifiedAccounts[0].accountType=="GOOGLE") {
                         claims.push(promises[i]);
                     }
                 }
@@ -260,24 +246,7 @@ export default function AuthJoinPage(props) {
                     :
                     <p className="center"><button className="mini" onClick={handleSignIn}>sign in with google</button></p>
                 }
-                {claims.map(({author, amount, vestDate, recipient, nonce, claimName, reservesAmt, isLatest}) => {
-                    return <TransactionBlob 
-                        author = {author}
-                        amount = {amount}
-                        vestDate = {vestDate}
-                        claimData = {null}
-                        recipient = {recipient}
-                        reservesAmt = {reservesAmt}
-                        fromVerified = {false}
-                        toVerified = {false}
-                        fromSignature = {null}
-                        nonce = {nonce}
-                        claimName = {claimName}
-                        isMyAsset = {false}
-                        isLatest = {isLatest}
-                    />
-                })
-                }
+                {claims.map(({author, nonce, claimName}) => {return <TransactionBlob feedId={author.id} claimName={claimName} nonce={nonce}/>})}
             </div>
         :
             <div className="outerDiv center">loading...</div>

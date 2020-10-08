@@ -1,13 +1,37 @@
 import './tx.css';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { encode } from 'url-safe-base64';
 import * as cashless from 'containers/App/cashless';
 import * as ethers from 'ethers';
+import axios from 'axios';
 import { useKeyFileStickyState, safeKey } from 'utils/stateUtils';
 import { Link } from 'react-router-dom';
 
+const providerURL = "https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey;
+
 const toEth = (num) => {
     return num/ethers.utils.parseEther("1");
+}
+
+const getReservesAmount = async (address) => {
+    try {
+        let contract = cashless.contract(providerURL, null);
+        let resp = await contract.functions.balanceOf(address);
+        return toEth(resp);
+    } catch(_e) {
+        return 0;
+    }
+}
+
+const verifySig = async (claim, sig, isSender) => {
+    try {
+        let fixedSig = {v: sig.v, r:Uint8Array.from(Buffer.from(sig.r.substring(2), 'hex')), s: Uint8Array.from(Buffer.from(sig.s.substring(2), 'hex'))};
+        let data = Uint8Array.from(Buffer.from(claim.substring(2), 'hex'));
+        let contract = cashless.contract(providerURL, null);
+        return await cashless.verifyClaimSig(contract, data, fixedSig, isSender);
+    } catch(_e) {
+        return false;
+    }
 }
 
 const now = () => {
@@ -32,13 +56,79 @@ const getAccountsString = (accounts) => {
     return s.substring(0, s.length-2);
 }
 
-const providerURL = "https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey;
+const getPromise = async (feedId, claimName, nonce) => {
+    const query = `query { promise(claimName:"`+claimName+`", feedId:"`+feedId+`", nonce:`+nonce+`) {
+        amount
+        id
+        denomination
+        vestDate
+        nonce
+        claimName
+        isLatest
+        sequence
+        timestamp
+        author {
+            id
+            reserves {
+                address
+            }
+            commonName {
+                name
+                id
+            }
+            verifiedAccounts {
+                handle
+                accountType
+            }
+        }
+        recipient {
+            id
+            reserves {
+                address
+            }
+            commonName {
+                name
+                id
+            }
+            verifiedAccounts {
+                handle
+                accountType
+            }
+        }
+        claim {
+            data
+            fromSignature {
+                v
+                r
+                s
+            }
+            toSignature {
+                v
+                r
+                s
+            }
+        }
+    }}`;
+    try {
+        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        return r.data.data.promise;
+    } catch(e) {
+        console.log('failed graphql query:', e.message)
+    }
+}
 
 function TransactionBlob(props) {
 
     const [seeDetails, setSeeDetails] = useState(false);
     const [key, setKey] = useKeyFileStickyState();
     const [isJSON, setIsJSON] = useState(false);
+    const [loaded, setLoaded] = useState(false);
+    const [promise, setPromise] = useState(null);
+    const [reservesAmt, setReservesAmt] = useState(0);
+    const [isMyAsset, setIsMyAsset] = useState(false);
+    const [fromSigVerified, setFromSigVerified] = useState(false);
+    const [toSigVerified, setToSigVerified] = useState(false);
+    const [settled, setSettled] = useState(false);
 
     const handleSeeDetails = _evt => {
         setSeeDetails(true);
@@ -54,7 +144,7 @@ function TransactionBlob(props) {
 
     const handleClaimPromise = async _evt => {
         console.log("attempting settlement");
-        let data = Uint8Array.from(Buffer.from(props.claimData.substring(2), 'hex'));
+        let data = Uint8Array.from(Buffer.from(promise.claimData.substring(2), 'hex'));
         console.log(data);
         let contract = cashless.contract(providerURL, null);
         let libContract = cashless.libContract(providerURL);
@@ -78,7 +168,7 @@ function TransactionBlob(props) {
             return
         }
         let receiverSig = claimSig;
-        let senderSig = {v: props.fromSignature.v, r: Uint8Array.from(Buffer.from(props.fromSignature.r.substring(2), 'hex')), s: Uint8Array.from(Buffer.from(props.fromSignature.s.substring(2), 'hex'))};
+        let senderSig = {v: promise.fromSignature.v, r: Uint8Array.from(Buffer.from(promise.fromSignature.r.substring(2), 'hex')), s: Uint8Array.from(Buffer.from(promise.fromSignature.s.substring(2), 'hex'))};
         let txh;
         if (key.private != null) {
             let wallet = cashless.wallet(providerURL, key.private);
@@ -94,69 +184,71 @@ function TransactionBlob(props) {
         console.log(txh);
     }
 
+    const load = async () => {
+        let prom = await getPromise(props.feedId, props.claimName, Number(props.nonce));
+        if (prom!=null) {
+            setPromise(prom);
+            setReservesAmt(await getReservesAmount(prom.author.reserves.address));
+            setFromSigVerified(await verifySig(prom.claim.data, prom.claim.fromSignature, true));
+            setToSigVerified(await verifySig(prom.claim.data, prom.claim.toSignature, false));
+            if (prom.recipient.reserves!=null && key!=null && prom.recipient.reserves.address==key.address) {
+                setIsMyAsset(true);
+            }
+            setLoaded(true);
+        } else {
+            console.log("error: null promise!");
+        }
+    }
+
+    useEffect(() => {
+        (async () => await load())();
+    }, []);
+
     return (
-        <div className={props.isLatest ? "blobOuter center": "bgGrey blobOuter center"}>
-            <div>
-                <table className= "blobTable leftAlign">
-                    <col className="width60"></col>
-                    <col className="width40"></col>
-                    <tbody>
-                    <tr>
-                        <td><h1><strong>ID:{props.claimName}</strong></h1></td>
-                        <td><h1><strong>Nonce: {props.nonce==0 ? <span className="yellow">(pending)</span>:props.nonce}</strong></h1></td>
-                    </tr>
-                    </tbody>
-                </table>
-                <p className="largeP">Amount:  ${props.amount.toFixed(2)}</p>
-                <p className="largeP">To: {props.recipient.id == null ? props.recipient.verifiedAccounts[0].handle:<Link to={"/feed/"+encode(props.recipient.id.substring(1, props.recipient.id.length-8))} className="oldLink">{props.recipient.commonName==null ? props.recipient.id.substring(0, 8)+'...':<span>{props.recipient.commonName.name==null ? props.recipient.id.substring(0, 8)+'...':props.recipient.commonName.name}</span>}</Link>}</p>
-                <p className="largeP">From: <Link to={"/feed/"+encode(props.author.id.substring(1, props.author.id.length-8))} className="oldLink">{props.author.commonName == null ? props.author.id.substring(0, 10)+'...': props.author.commonName.name}</Link></p>
-                {props.isLatest ? <p className="largeP">Risk of Default: {props.claimData != null ? <span>{(props.reservesAmt < props.amount) ? <span className="red">high</span>:<span className="green">low</span>}</span>: <span className="grey">none</span>}</p>: <p className="largeP"></p>}
-                {props.isLatest ? <p className="largeP">Due Date: {Number(props.vestDate) - now() > 0 ? <span>{(new Date(props.vestDate*1000)).toLocaleString()}</span>:<span className="green">Available Now</span>} {props.nonce==0 ? <span className="yellow">(pending)</span>:<span></span>}</p>: <p className="largeP"></p>}
-                <span>{(props.isMyAsset) && (Number(props.vestDate) - now() < 0) && (props.isLatest) ? <p><button className="mini" onClick={handleClaimPromise}>claim!</button></p>:<p></p>}</span>
-                {seeDetails ?
-                <span>
-                    <br></br>
+        <div>
+            {loaded ?
+            <div className={promise.isLatest ? "blobOuter center": "bgGrey blobOuter center"}>
+                <div>
                     <table className= "blobTable leftAlign">
-                        <col className="width50"></col>
-                        <col className="width50"></col>
+                        <col className="width20"></col>
+                        <col className="width40"></col>
+                        <col className="width40"></col>
                         <tbody>
                         <tr>
-                            <td><p>Sender</p></td>
-                            <td><p>Receiver</p></td>
-                        </tr>
-                        <tr>
-                            <td><p>ID: <span className="smaller"><Link to={"/feed/"+encode(props.author.id.substring(1, props.author.id.length-8))} className="oldLink">{props.author.id}</Link></span></p></td>
-                            <td><p>ID: {props.recipient.id==null ? '(unknown)': <span className="smaller"><Link to={"/feed/"+encode(props.recipient.id.substring(1, props.recipient.id.length-8))} className="oldLink">{props.recipient.id}</Link></span>}</p></td>
-                        </tr>
-                        <tr>
-                            <td><p>Name: {props.author.commonName==null ? '(unknown)':props.author.commonName.name}</p></td>
-                            <td><p>Name:  {props.recipient.commonName==null ? '(unknown)':props.recipient.commonName.name}</p></td>
-                        </tr>
-                        <tr>
-                            <td><p>Address: <span className="smaller">{props.author.reserves.address}</span></p></td>
-                            <td><p>Address: {props.recipient.reserves == null ? '(unknown)':<span className="smaller">{props.recipient.reserves.address}</span>}</p></td>
-                        </tr>
-                        <tr>
-                            <td><p>Accounts: {getAccountsString(props.author.verifiedAccounts)}</p></td>
-                            <td><p>Accounts: {getAccountsString(props.recipient.verifiedAccounts)}</p></td>
-                        </tr>
-                        <tr>
-                            <td><p>Signature: {props.claimData != null ? <span>{props.fromVerified ? <span className="green">verified</span>:<span className="grey">unverified</span>}</span>:<span className="grey">no claim</span>}</p></td>
-                            <td><p>Signature: {props.claimData != null ? <span>{props.toVerified ? <span className="green">verified</span>:<span className="grey">unverified</span>}</span>:<span className="grey">no claim</span>}</p></td>
-                        </tr>
-                        <tr>
-                            <td><p>In Reserve: {props.reservesAmt < props.amount ? <span className="red">${props.reservesAmt.toFixed(2)}</span>:<span className="green">${props.reservesAmt.toFixed(2)}</span>}</p></td>
-                            <td><p></p></td>
+                            <td><h1><span className="green"><strong>${promise.amount.toFixed(2)}</strong></span></h1></td>
+                            <td><h1>From: <strong><Link to={"/feed/"+encode(promise.author.id.substring(1, promise.author.id.length-8))} className="oldLink">{promise.author.commonName == null ? promise.author.id.substring(0, 10)+'...': promise.author.commonName.name}</Link></strong></h1></td>
+                            <td><h1>To: <strong>{promise.recipient.id == null ? promise.recipient.verifiedAccounts[0].handle:<Link to={"/feed/"+encode(promise.recipient.id.substring(1, promise.recipient.id.length-8))} className="oldLink">{promise.recipient.commonName==null ? promise.recipient.id.substring(0, 8)+'...':<span>{promise.recipient.commonName.name==null ? promise.recipient.id.substring(0, 8)+'...':promise.recipient.commonName.name}</span>}</Link>}</strong></h1></td>
                         </tr>
                         </tbody>
                     </table>
-                    <p className="center">claim data <button className="mini" onClick={handleSwitchJSON}>{isJSON ? <span>see hex</span>:<span>see JSON</span>}</button><br></br><br></br><textarea rows="10" cols="65" value={(isJSON && props.claimData != null) ? getClaim(props.claimData): props.claimData}></textarea></p>
-                </span>
-                :
-                <p></p>
-                }
-                <p className="center">{seeDetails ? <button className="mini" onClick={handleHideDetails}>see less</button>:<button className="mini" onClick={handleSeeDetails}>see more</button>}</p>
+                    <p className="largeP">Status: {!promise.isLatest ? <span className="red">(nonce out-of-date)</span>:<span>{promise.nonce==0 ? <span className="yellow">(pending claim)</span>:<span>{Number(promise.vestDate)-now()>0 ? <span className="green">(vesting)</span>:<span className="green">(vested)</span>}</span>}</span>}</p>
+                    {Number(promise.vestDate)-now()>0 && promise.isLatest ? <p className="largeP">Due Date: {(new Date(promise.vestDate*1000)).toLocaleString()}</p>:<p>{isMyAsset && promise.isLatest ? <button className="mini" onClick={handleClaimPromise}>claim!</button>:<span></span>}</p>}
+                    {promise.isLatest ? <p className="largeP">From Account Balance: {reservesAmt>=promise.amount ? <span className="green">${reservesAmt.toFixed(2)}</span>:<span className="red">${reservesAmt.toFixed(2)}</span>}</p>:<p></p>}
+                    {promise.claim.data != null && promise.isLatest ? <p className="largeP">Risk of Default: <span>{reservesAmt < promise.amount ? <span className="red">high</span>:<span className="green">low</span>}</span></p>:<p></p>}
+                    <p className="largeP">Nonce: {promise.nonce}</p>
+                    {seeDetails ?
+                    <span>
+                        <br></br>
+                        <p>Author ID: {promise.author.id}</p>
+                        <p>Sequence #: {promise.sequence}</p>
+                        <p>Message ID: {promise.id}</p>
+                        <p>Message Timestamp: {promise.timestamp}</p>
+                        <p>Claim Name: {promise.claimName}</p>
+                        <p>Recipient ID: {promise.recipient.id != null ? promise.recipient.id:'(unknown)'}</p>
+                        <p>Author Account: {promise.author.reserves.address}</p>
+                        <p>Recipient Account: {promise.recipient.reserves != null ? promise.recipient.reserves.address:'(unknown)'}</p>
+                        <br></br>
+                        <p className="center">claim data <button className="mini" onClick={handleSwitchJSON}>{isJSON ? <span>see hex</span>:<span>see JSON</span>}</button><br></br><br></br><textarea rows="10" cols="65" value={(isJSON && promise.claim.data != null) ? getClaim(promise.claim.data): promise.claim.data}></textarea></p>
+                    </span>
+                    :
+                    <p></p>
+                    }
+                    <p className="center">{seeDetails ? <button className="mini" onClick={handleHideDetails}>see less</button>:<button className="mini" onClick={handleSeeDetails}>see more</button>}</p>
+                </div>
             </div>
+            :
+            <div className="blobOuter center"><p className="center">loading...</p></div>
+            }
         </div>
     );
 }

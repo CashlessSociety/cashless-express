@@ -29,14 +29,16 @@ module.exports = {
     Query: {
         allPromises: (_, __, {dataSources}) =>
             dataSources.ssbFlumeAPI.getAllPromises(),
-        promises: (_, { id }, {dataSources}) =>
-            dataSources.ssbFlumeAPI.getPromisesByFeedId({ feedId: id }),
-        pendingPromises: (_, { id }, {dataSources}) =>
-            dataSources.ssbFlumeAPI.getPendingPromisesByFeedId({ feedId: id }),
-        promise: (_, { claimName }, {dataSources})  => 
-            dataSources.ssbFlumeAPI.getPromise({ claimName: claimName }),
-        messages: (_, { id }, { dataSources }) =>
-            dataSources.ssbFlumeAPI.getFeedMessages({ feedId: id }),
+        promises: (_, { feedId }, {dataSources}) =>
+            dataSources.ssbFlumeAPI.getPromisesByFeedId({ feedId: feedId }),
+        pendingPromises: (_, { feedId }, {dataSources}) =>
+            dataSources.ssbFlumeAPI.getPendingPromisesByFeedId({ feedId: feedId }),
+        promiseChain: (_, { claimName, feedId }, {dataSources})  => 
+            dataSources.ssbFlumeAPI.getPromiseChain({ claimName: claimName, feedId: feedId }),
+        promise: (_, { claimName, feedId, nonce }, {dataSources})  => 
+            dataSources.ssbFlumeAPI.getPromise({ claimName: claimName, feedId: feedId, nonce: nonce }),
+        messages: (_, { feedId }, { dataSources }) =>
+            dataSources.ssbFlumeAPI.getFeedMessages({ feedId: feedId }),
         feed: (_, { id }, { dataSources }) =>
             dataSources.ssbFlumeAPI.getFeed({ feedId: id }),
         allIdMsgs: (_, __, {dataSources}) =>

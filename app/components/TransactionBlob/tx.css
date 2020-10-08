@@ -2,7 +2,6 @@
     border: 0.2em solid;
     border-color: black;
     border-radius: 0.4em;
-    padding-left: 1em;
     margin: 1em;
     width: 100%;
     font-size:0.8em;
@@ -58,6 +57,10 @@ p {
     margin-left: 1em;
 }
 
+h1 {
+    font-weight: normal;
+}
+
 .blobTable {
     width: 100%;
 }
@@ -74,16 +77,12 @@ p {
     width: 50%;
 }
 
-.width60 {
-    width: 60%;
+.width20 {
+    width: 20%;
 }
 
 .width40 {
     width: 40%;
-}
-
-.width25 {
-    width: 25%;
 }
 
 .green {

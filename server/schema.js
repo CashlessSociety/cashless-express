@@ -184,10 +184,11 @@ const typeDefs = gql`
         allPromises: [PromiseMessage]
         allIdMsgs: [IdentityMessage]
         feed(id: ID!): Feed
-        promises(id: ID!): [PromiseMessage]
-        promise(claimName: ID!): [PromiseMessage]
-        messages(id: ID!): [Message]
-        pendingPromises(id: ID!): [PromiseMessage]
+        promises(feedId: ID!): [PromiseMessage]
+        promiseChain(claimName: ID!, feedId: ID!): [PromiseMessage]
+        promise(claimName: ID!, feedId: ID!, nonce: Int!): PromiseMessage
+        messages(feedId: ID!): [Message]
+        pendingPromises(feedId: ID!): [PromiseMessage]
     }
 `;
 
