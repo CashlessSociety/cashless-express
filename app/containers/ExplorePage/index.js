@@ -7,50 +7,33 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
 import 'containers/App/app.css';
-import { encode } from 'url-safe-base64';
+import TransactionBlob from 'components/TransactionBlob';
 
 const getTransactions = async () => {
     const query = `query { allPromises {
-            amount
-            issueDate
-            vestDate
             nonce
             claimName
+            timestamp
+            isLatest
             author {
                 id
-                commonName {
-                    name
-                    id
-                }
-                verifiedAccounts {
-                    handle
-                    accountType
-                }
-            }
-            recipient {
-                id
-                commonName {
-                    name
-                    id
-                }
-                verifiedAccounts {
-                    handle
-                    accountType
-                }
             }
         }}`;
     try {
         let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
         if (r.data.data.allPromises != null) {
-            let promises = r.data.data.allPromises;
-
+            let promises = [];
+            for (let i=0; i<r.data.data.allPromises.length; i++) {
+                if (r.data.data.allPromises[i].isLatest) {
+                    promises.push(r.data.data.allPromises[i]);
+                }
+            }
             const compare= (a, b) => {
                 let comparison = 0;
-                if (a.issueDate > b.issueDate) {
+                if (a.timestamp > b.timestamp) {
                   comparison = -1;
-                } else if (a.issueDate < b.issueDate) {
+                } else if (a.timestamp < b.timestamp) {
                   comparison = 1;
                 }
                 return comparison;
@@ -77,7 +60,7 @@ export default function ExplorePage() {
 
     useEffect(() => {
         (async () => await load())();
-      }, []);
+    }, []);
 
     return (
         <article>
@@ -87,13 +70,8 @@ export default function ExplorePage() {
         </Helmet>
         {loaded ?
         <div className="outerDiv center">
-            {txs.map(({ author, nonce, recipient, issueDate, claimName, amount }) => {
-                let sId = encode(author.id.substring(1, author.id.length-8));
-                let rId;
-                if (recipient.id!=null) {
-                    rId = encode(recipient.id.substring(1, recipient.id.length-8));
-                }
-            return <div className="borderedDiv long"><p className="leftAlign">claim: <Link to={"/promise/"+sId+"/"+claimName} className="oldLink">{claimName.substring(0,25)+'...'}</Link> nonce: {nonce} timestamp: {issueDate}<br></br>From: <Link to={"/feed/"+sId} className="oldLink">{author.id.substring(0, 16)+'...'}</Link> To: {recipient.id != null ? <Link to={"/feed/"+rId} className="oldLink">{recipient.id.substring(0, 16)+'...'}</Link>:recipient.verifiedAccounts[0].handle} Amount: {amount}</p></div>;
+            {txs.map(({ author, nonce, claimName }) => {
+                return <TransactionBlob nonce={nonce} claimName={claimName} feedId={author.id} isStub={true}/>
             })}
         </div>
         :

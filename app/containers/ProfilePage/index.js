@@ -11,10 +11,9 @@ import * as ethers from 'ethers';
 import { encode } from 'url-safe-base64';
 import * as cashless from 'containers/App/cashless';
 import { useKeyFileStickyState, safeKey } from 'utils/stateUtils';
-import { FormattedMessage } from 'react-intl';
-import messages from './messages';
 import { Link } from 'react-router-dom'
 import 'containers/App/app.css';
+import TransactionBlob from 'components/TransactionBlob';
 
 const uuid = () => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -41,18 +40,6 @@ const parsePromisesGross = (promises) => {
     return {gross: gross, grossPending: grossPending};
 }
 
-const getAccountsString = (accounts) => {
-    let s = "";
-    if (accounts==null || accounts.length == 0) {
-        return '(none)';
-    }
-    for (let i=0; i< accounts.length; i++) {
-        s += accounts[i].handle + ", ";
-    }
-
-    return s.substring(0, s.length-2);
-}
-
 const emptyHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
 const providerURL = "https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey;
 
@@ -69,6 +56,7 @@ export default function ProfilePage(props) {
 
   const [myFeed, setMyFeed] = useState(null);
   const [signer, setSigner] = useState(null);
+  const [myPromises, setMyPromises] = useState([]);
   const [myReservesAmt, setMyReservesAmt] = useState(0.0);
   const [promisesToCommit, setPromisesToCommit] = useState([]);
 
@@ -100,54 +88,20 @@ export default function ProfilePage(props) {
         }
         assets {
             amount
-            denomination
             vestDate
             nonce
             claimName
             author {
                 id
-                reserves {
-                    address
-                }
-                commonName {
-                    name
-                }
-            }
-            claim {
-                data
-                fromSignature {
-                    v
-                    r
-                    s
-                }
             }
         }
         liabilities {
-            recipient {
-                id
-                reserves {
-                    address
-                }
-                commonName {
-                    name
-                }
-                verifiedAccounts {
-                    accountType
-                    handle
-                }
-            }
-            claimName
             amount
-            denomination
             vestDate
             nonce
-            claim {
-                data
-                fromSignature {
-                    v
-                    r
-                    s
-                }
+            claimName
+            author {
+                id
             }
         }
     }}`;
@@ -155,6 +109,20 @@ export default function ProfilePage(props) {
         let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
         if (r.data.data.feed != null && r.data.data.feed.reserves != null) {
             setMyFeed(r.data.data.feed);
+            let promises = r.data.data.feed.assets;
+            promises.push(...r.data.data.feed.liabilities);
+            const compare= (a, b) => {
+                let comparison = 0;
+                if (a.vestDate > b.vestDate) {
+                  comparison = -1;
+                } else if (a.vestDate < b.vestDate) {
+                  comparison = 1;
+                }
+                return comparison;
+            }
+
+            promises = promises.sort(compare);
+            setMyPromises(promises);
             setMyReservesAmt(await getReservesAmount(r.data.data.feed.reserves.address));
             if (r.data.data.feed.commonName != null) {
                 setNewName(r.data.data.feed.commonName.name);
@@ -469,46 +437,31 @@ export default function ProfilePage(props) {
       </Helmet>
         {loaded ?
         <div className="outerDiv column">
-            <h2>Your Portfolio:</h2>
             <div>
                 {changeName==false ?
-                <p><span className="bold under"><FormattedMessage {...messages.nameHeader} /></span>:&nbsp;
-                    {myFeed.commonName==null ? <span><FormattedMessage {...messages.unknown} /></span>:<span>{myFeed.commonName.name}</span>}
-                    &nbsp;<button className="mini" onClick={handleChangeName}>change</button>
+                <p className="center">
+                    {myFeed.commonName==null ? <span>(unknown)</span>:<span>{myFeed.commonName.name}</span>}
+                    &nbsp;<button className="mini" onClick={handleChangeName}>change name</button>
                 </p>
                 :
-                <p>
-                    <span className="bold under"><FormattedMessage {...messages.nameHeader} /></span>:&nbsp;&nbsp;<input type="text" className="textField" value={newName} onChange={handleNewName}/>
+                <p className="center">
+                    <input type="text" className="textField" value={newName} onChange={handleNewName}/>
                     &nbsp;<button className="mini" onClick={handleSubmitName}>submit</button>
                 </p>
                 }
-                <p>
-                    <span className="bold under"><FormattedMessage {...messages.idHeader} /></span>: {key.feedKey.id}
+                <p className="center">
+                    {myFeed.verifiedAccounts != null ? 
+                        myFeed.verifiedAccounts.map(({handle}) => {return <span><span className="green">{handle} ✔</span>&nbsp;</span>})
+                    :
+                    <span></span>
+                    }
                 </p>
-                <p>
-                    <span className="bold under">Handles</span>: {getAccountsString(myFeed.verifiedAccounts)}
+                <p className="center">
+                    <span className="bold under">Cash Reserves</span>: {'$'+myReservesAmt.toFixed(2)}
                 </p>
-                <p>
-                    <span className="bold under"><FormattedMessage {...messages.reservesHeader} /></span>: {'$'+myReservesAmt.toFixed(2)} <span>&nbsp;<button className="mini" onClick={handleGoWallet}>go to Wallet</button></span>
-                </p>
-                <p>
-                    <span className="bold under"><FormattedMessage {...messages.incomingHeader} /></span>: {renderAssets()}
-                </p>
-                <ul>
-                    {myFeed.assets.map(({ author, claimName, amount, vestDate }) => {
-                        let s = encode(author.id.substring(1, author.id.length-8));
-                        return  <li><Link to={"/promise/"+s+"/"+claimName} className="oldLink">From: {author.commonName!=null ? author.commonName.name: author.id.substring(0, 6)} Amount: ${amount} Due Date: {vestDate - now() > 0 ? <span>{(new Date(vestDate*1000)).toLocaleString()}</span>:<span>Available Now</span>}</Link></li>;
-                    })}
-                </ul>
-                <p>
-                    <span className="bold under"><FormattedMessage {...messages.outgoingHeader} /></span>: {renderLiabilities()}
-                </p>
-                <ul>
-                    {myFeed.liabilities.map(({ recipient, claimName, amount, vestDate })=> {
-                        let s = encode(myFeed.id.substring(1, myFeed.id.length-8));
-                        return  <li><Link to={"/promise/"+s+"/"+claimName} className="oldLink">To: {recipient.commonName!=null ? recipient.commonName.name: <span>{recipient.id!=null ? recipient.id.substring(0,6): recipient.verifiedAccounts[0].handle}</span>} Amount: ${amount} Due Date: {vestDate - now() > 0 ? <span>{(new Date(vestDate*1000)).toLocaleString()}</span>:<span>Available Now</span>}</Link></li>;
-                    })}
-                </ul>
+                {myPromises.map(({ claimName, nonce, author }) => {
+                    return <TransactionBlob claimName={claimName} nonce={nonce} feedId={author.id} isStub={true} />;
+                })}
             </div>
             <div>
                 <ul>
@@ -521,7 +474,7 @@ export default function ProfilePage(props) {
                 <p>
                     {sendToEmail==false ?
                     <span>
-                        <span className="bold under"><FormattedMessage {...messages.idInput} /></span>:&nbsp;
+                        <span className="bold under">ID</span>:&nbsp;
                         {queryFeed==null  ?
                             <span><input type="text" className="textField" value={queryId} onChange={handleQueryId}/> <button className="mini" onClick={handleSendToEmail}>send to email</button></span>
                             :
@@ -530,16 +483,16 @@ export default function ProfilePage(props) {
                     </span>
                     :
                     <span>
-                        <span className="bold under"><FormattedMessage {...messages.emailInput} /></span>:&nbsp;
+                        <span className="bold under">Email</span>:&nbsp;
                         <input type="text" className="textField" value={queryEmail} onChange={handleQueryEmail}/> <button className="mini" onClick={handleSendToId}>send to id</button>
                     </span>
                     }   
                 </p>
                 <p>
-                    <span className="bold under"><FormattedMessage {...messages.amtInput} /></span>:&nbsp;<input type="text" className="textField" value={promiseAmount} onChange={handleAmount}/>
+                    <span className="bold under">Amount</span>:&nbsp;<input type="text" className="textField" value={promiseAmount} onChange={handleAmount}/>
                 </p>
                 <button className="blackButton" onClick={handlePublish}>
-                    <FormattedMessage {...messages.publishButton} />
+                    publish
                 </button>
                 <p><span className="bold italic">{publishResponse}</span></p>
             </div>

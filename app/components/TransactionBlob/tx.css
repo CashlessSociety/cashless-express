@@ -16,6 +16,10 @@
     font-weight: bold;
 }
 
+.smaller {
+    font-size:0.7em;
+}
+
 button {
     background-color:  transparent;
     color: black;
@@ -85,6 +89,10 @@ h1 {
     width: 40%;
 }
 
+.width60 {
+    width: 60%;
+}
+
 .green {
     color:green;
 }
@@ -97,10 +105,18 @@ h1 {
     color: red;
 }
 
+.black {
+    color: black;
+}
+
 .yellow {
     color: rgb(184, 147, 28);
 }
 
 .bgGrey {
     background-color: grey !important;
+}
+
+.rightAlign {
+    text-align: right;
 }

@@ -4,22 +4,20 @@
  * This is the first thing users see of our App, at the '/' route
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import axios from 'axios';
 import * as ssbKeys from 'ssb-keys';
 import * as cashless from 'containers/App/cashless';
 import * as ethers from 'ethers';
-import { FormattedMessage } from 'react-intl';
 import { useKeyFileStickyState, safeKey } from 'utils/stateUtils';
-import messages from './messages';
 import 'containers/App/app.css';
-import { keyBy } from 'lodash';
 
 export default function HomePage(props) {
 
   const [clickedJoin, setClickedJoin] = useState(false);
   const [key, setKey] = useKeyFileStickyState();
+  const [loaded, setLoaded] = useState(false);
 
   const newKey = async (useMetamask) => {
     let key = ssbKeys.generate("ed25519", cashless.randomHash());
@@ -156,34 +154,49 @@ export default function HomePage(props) {
     reader.readAsText(evt.target.files[0]);
   }
 
+  const load = async () => {
+    /*if (key!=null) {
+        props.history.push({pathname:'/profile'});
+    }*/
+    setLoaded(true);
+  }
+
+  useEffect(() => {
+    (async () => await load())();
+  }, []);
+
   return (
     <article>
       <Helmet>
         <title>Home Page</title>
         <meta name="description" content="My homepage" />
       </Helmet>
+        {loaded ?
         <div className="outerDiv">
             {!clickedJoin ? 
             <div className="center">
                 <button onClick={handleClickedJoin}>
-                    <FormattedMessage {...messages.joinButton} />
+                    JOIN
                 </button>
                 <input type="file" id="file" className="hiddenFile" onChange={handleKeyfileInput}/>
                 <button onClick={handleLogin}>
-                    <FormattedMessage {...messages.loginButton} />
+                    LOGIN
                 </button>                
             </div>
             :
             <div className="center">
                 <button className="extralong" onClick={handleJoinMetamask}>
-                    <FormattedMessage {...messages.metamaskButton} />
+                    connect my wallet
                 </button>
                 <button className="extralong" onClick={handleJoinNewWallet}>
-                    <FormattedMessage {...messages.newWalletButton} />
+                    give me a wallet
                 </button>
             </div>
             }
         </div>
+        :
+        <div className="outerDiv center">loading...</div>
+        }
     </article>
   );
 }

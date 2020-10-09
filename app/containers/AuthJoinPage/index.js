@@ -152,7 +152,7 @@ export default function AuthJoinPage(props) {
             let r = await axios.post('http://127.0.0.1:3000/authenticatedEmail', {firebaseToken: idToken, ssbIdentity: key.feedKey.id}, {});
             if (r.data.status=="ok") {
                 const query = `
-                    query { messages(id:"`+r.data.verifierId+`") {
+                    query { messages(feedId:"`+r.data.verifierId+`") {
                       ... on IdentityMessage {
                         id
                         sequence

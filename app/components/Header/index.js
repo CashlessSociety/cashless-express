@@ -1,19 +1,13 @@
 import React from 'react';
-import { FormattedMessage } from 'react-intl';
-
-//import A from './A';
-import Img from './Img';
-import NavBar from './NavBar';
-//import HeaderLink from './HeaderLink';
+import Img from 'components/Img';
 import Banner from 'images/cashlessbanner.png';
-//import messages from './messages';
+import './header.css';
 
 function Header() {
+
   return (
     <div>
-      <Img src={Banner} alt="cashless.social"></Img>
-      <NavBar>
-      </NavBar>
+      <Img className="banner" src={Banner} alt="cashless.social"></Img>
     </div>
   );
 }
