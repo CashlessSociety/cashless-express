@@ -46,7 +46,7 @@ const providerURL = "https://"+cashless.network+".infura.io/v3/"+cashless.infura
 const getReservesAmount = async (address) => {
 	let contract = cashless.contract(providerURL, null);
     let resp = await contract.functions.balanceOf(address);
-    return resp/ethers.utils.parseEther("1");
+    return resp/cashless.parseCoin("1");
 }
 
 export default function ProfilePage(props) {

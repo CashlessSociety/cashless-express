@@ -1,7 +1,7 @@
 /*
- * HomePage
+ * WalletPage
  *
- * This is the first thing users see of our App, at the '/' route
+ * 
  */
 
 import React, { useState, useEffect } from 'react';
@@ -21,13 +21,21 @@ const fromEth = (num) => {
     return ethers.utils.parseEther(num.toString());
 }
 
+const toUSD = (num) => {
+    return num/cashless.parseCoin("1");
+}
+
+const fromUSD = (num) => {
+    return cashless.parseCoin(num);
+}
+
 export default function WalletPage(props) {
   const [loaded, setLoaded] = useState(false);
   const [key, setKey] = useKeyFileStickyState();
   const [myReserves, setMyReserves] = useState(0.0);
   const [myWalletEth, setMyWalletEth] = useState(0.0);
-  const [myWalletDai, setMyWalletDai] = useState(0.0);
-  const [daiContract, setDaiContract] = useState(null);
+  const [myWalletUsdc, setMyWalletUsdc] = useState(0.0);
+  const [usdcContract, setUsdcContract] = useState(null);
   const [contract, setContract] = useState(null);
   const [transactSwitch, setTransactSwitch] = useState(false);
   const [isTransacting, setIsTransacting] = useState(false);
@@ -46,18 +54,16 @@ export default function WalletPage(props) {
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 mySigner = provider.getSigner();
             }
-            let myDaiContract = cashless.stablecoinContract(providerURL, mySigner);
+            let myUsdcContract = cashless.stablecoinContract(providerURL, mySigner);
             let myContract = cashless.contract(providerURL, mySigner);
-            let balEthWei = await myDaiContract.signer.getBalance();
-            let balDaiWei = await myDaiContract.functions.balanceOf(key.address);
-            let reserve = await myContract.functions.balanceOf(key.address);
-            setDaiContract(myDaiContract);
+            let balEthWei = await myUsdcContract.signer.getBalance();
+            let balUsdcWei = await myUsdcContract.functions.balanceOf(key.address);
+            let reserveWei = await myContract.functions.balanceOf(key.address);
+            setUsdcContract(myUsdcContract);
             setContract(myContract);
-            let balEth = toEth(balEthWei);
-            let balDai = toEth(balDaiWei);
-            setMyWalletDai(balDai);
-            setMyWalletEth(balEth);
-            setMyReserves(toEth(reserve));
+            setMyWalletUsdc(toUSD(balUsdcWei));
+            setMyWalletEth(toEth(balEthWei));
+            setMyReserves(toUSD(reserveWei));
             setLoaded(true);
         } else {
             props.history.push({pathname: '/'});
@@ -101,11 +107,11 @@ export default function WalletPage(props) {
                 setErrorMsg('Not enough ETH in wallet');
                 return
             }
-            if (x>myWalletDai) {
+            if (x>myWalletUsdc) {
                 setErrorMsg('Not enough DAI in wallet');
                 return
             }
-            let txh = await cashless.fundReservesTx(contract, daiContract, queryAmt);
+            let txh = await cashless.fundReservesTx(contract, usdcContract, queryAmt);
             if (txh!=null) {
                 setLastTxId(txh);
                 setIsTransacting(true);
@@ -125,14 +131,14 @@ export default function WalletPage(props) {
   useInterval(async () => {
       if (loaded) {
         console.log("checking blockchain....");
-        let balEthWei = await daiContract.signer.getBalance();
-        let balDaiWei = await daiContract.functions.balanceOf(await daiContract.signer.getAddress());
-        let reserves = await contract.functions.balanceOf(await contract.signer.getAddress());
+        let balEthWei = await usdcContract.signer.getBalance();
+        let balUsdcWei = await usdcContract.functions.balanceOf(await usdcContract.signer.getAddress());
+        let reservesWei = await contract.functions.balanceOf(await contract.signer.getAddress());
         let balEth = toEth(balEthWei);
-        let balDai = toEth(balDaiWei);
-        let balRes = toEth(reserves);
-        if (myWalletDai != balDai) {
-            setMyWalletDai(balDai);
+        let balUsdc = toUSD(balUsdcWei);
+        let balRes = toUSD(reservesWei);
+        if (myWalletUsdc != balUsdc) {
+            setMyWalletUsdc(balUsdc);
         }
         if (myWalletEth != balEth) {
             setMyWalletEth(balEth);
@@ -158,7 +164,7 @@ export default function WalletPage(props) {
                     <h1>Reserve (USDC): {myReserves.toFixed(2).toString()}</h1>
                 </div>
                 <div className="borderedDiv center halfwidth">
-                    <h1>USDC: {myWalletDai.toFixed(2).toString()}</h1>
+                    <h1>USDC: {myWalletUsdc.toFixed(2).toString()}</h1>
                     <h1>ETH: {myWalletEth.toFixed(5).toString()}</h1>
                 </div>
                 <p className="center marginRight">

@@ -9,15 +9,15 @@ import { Link } from 'react-router-dom';
 
 const providerURL = "https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey;
 
-const toEth = (num) => {
-    return num/ethers.utils.parseEther("1");
+const toUSD = (num) => {
+    return num/cashless.parseCoin("1");
 }
 
 const getReservesAmount = async (address) => {
     try {
         let contract = cashless.contract(providerURL, null);
         let resp = await contract.functions.balanceOf(address);
-        return toEth(resp);
+        return toUSD(resp);
     } catch(_e) {
         return 0;
     }
@@ -41,7 +41,7 @@ const now = () => {
 const getClaim = (claimString) => {
     let data = Uint8Array.from(Buffer.from(claimString.substring(2), 'hex'));
     let claim = cashless.decodeClaim(data);
-    let readableClaim = {amount: toEth(claim[0][0]), disputeDuration: Number(claim[0][1]), vestTimestamp: Number(claim[0][2]), voidTimestamp: Number(claim[0][3]), senderAddress: "0x"+claim[1][0], receiverAddress: "0x"+claim[1][1], claimName: cashless.bufferToHex(claim[2][0]), loopID: cashless.bufferToHex(claim[2][1]), nonce: Number(claim[3])};
+    let readableClaim = {amount: toUSD(claim[0][0]), disputeDuration: Number(claim[0][1]), vestTimestamp: Number(claim[0][2]), voidTimestamp: Number(claim[0][3]), senderAddress: "0x"+claim[1][0], receiverAddress: "0x"+claim[1][1], claimName: cashless.bufferToHex(claim[2][0]), loopID: cashless.bufferToHex(claim[2][1]), nonce: Number(claim[3])};
     return JSON.stringify(readableClaim, null, 4);
 }
 
