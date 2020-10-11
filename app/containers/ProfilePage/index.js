@@ -1,5 +1,5 @@
 /*
- * HomePage
+ * ProfilePage
  *
  * This is the first thing users see of our App, at the '/' route
  */
@@ -122,9 +122,9 @@ export default function ProfilePage(props) {
         let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
         if (r.data.data.feed != null && r.data.data.feed.reserves != null) {
             setMyFeed(r.data.data.feed);
-            let promises = r.data.data.feed.assets;
+            let promises = [];
+            promises.push(...r.data.data.feed.assets);
             promises.push(...r.data.data.feed.liabilities);
-            promises.push(...r.data.data.feed.settledPromises);
             console.log(r.data.data.feed.settlements);
             const compare= (a, b) => {
                 let comparison = 0;
@@ -137,6 +137,7 @@ export default function ProfilePage(props) {
             }
 
             promises = promises.sort(compare);
+            promises.push(...r.data.data.feed.settledPromises);
             setMyPromises(promises);
             setMyReservesAmt(await getReservesAmount(r.data.data.feed.reserves.address));
             if (r.data.data.feed.commonName != null) {
@@ -266,10 +267,6 @@ export default function ProfilePage(props) {
 
   const handleQueryEmail = async evt => {
       setQueryEmail(evt.target.value);
-  }
-
-  const handleGoWallet = _evt => {
-    props.history.push({pathname:'/wallet', state: {key: key}});
   }
 
   const handleCancel = _evt => {
@@ -452,7 +449,7 @@ export default function ProfilePage(props) {
         {loaded ?
         <div className="outerDiv column">
             <div>
-                <h1>Your Feed:</h1>
+                <h1>Your Portfolio:</h1>
                 {changeName==false ?
                 <p>
                     {myFeed.commonName==null ? <span>(unknown)</span>:<span>{myFeed.commonName.name}</span>}&nbsp;<button className="mini" onClick={handleChangeName}>change name</button>
@@ -472,6 +469,12 @@ export default function ProfilePage(props) {
                 </p>
                 <p>
                     <span className="bold under">Cash Reserves</span>: {'$'+myReservesAmt.toFixed(2)}
+                </p>
+                <p>
+                    <span className="bold under">Incoming</span>: {renderAssets()}
+                </p>
+                <p>
+                    <span className="bold under">Outgoing</span>: {renderLiabilities()}
                 </p>
                 {myPromises.map(({ claimName, nonce, author }) => {
                     return <TransactionBlob claimName={claimName} nonce={nonce} feedId={author.id} isStub={true} />;

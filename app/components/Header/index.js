@@ -9,12 +9,12 @@ function Header() {
   return (
     <div>
         <div className="cen">
-        <Link to="/profile"><button className="header">Feed</button></Link>
-        <Link to="/wallet"><button className="header">Wallet</button></Link>
-        <Link to="/explore"><button className="header">Explore</button></Link>
+            <Link to="/profile"><button className="header">Portfolio</button></Link>
+            <Link to="/wallet"><button className="header">Wallet</button></Link>
+            <Link to="/explore"><button className="header">Explore</button></Link>
         </div>
         <div>
-        <Img className="banner" src={Banner} alt="cashless.social"></Img>
+            <Img className="banner" src={Banner} alt="cashless.social"></Img>
         </div>
     </div>
   );
