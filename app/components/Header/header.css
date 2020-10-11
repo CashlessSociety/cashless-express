@@ -1,18 +1,32 @@
 @import url('https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap');
 
 .banner {
-    width: 100%;
+    width: 90%;
     margin: auto auto;
     display: block;
 }
 
-.rightAlign {
-    text-align: right;
-    padding-right: 1.5em;
+button.header {
+    background-color:  black;
+    color: white;
+    border: 0.1em solid;
+    border-color: black;
+    border-radius: 0.4em;
+    line-height: 2em;
+    width: 10em;
+    margin: 1em;
+    font-size: 1.5em;
+    outline:none;
 }
 
-.headerButtons{
-    display: block;
-    font-family: 'Courier Prime', monospace;
-    text-align: right;
+button:hover {
+    cursor:pointer;
+    transform: scale(1.2);
 }
+
+.cen {
+    text-align:center;
+}
+
+
+  

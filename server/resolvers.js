@@ -45,5 +45,9 @@ module.exports = {
             dataSources.ssbFlumeAPI.getAllIdMsgs(),
         allFeedIds: (_, __, {dataSources}) =>
             dataSources.ssbFlumeAPI.getFeedIds(),
+        claimSettlement: (_, { claimName }, {dataSources}) =>
+            dataSources.ssbFlumeAPI.getSettlementByClaimName({ claimName }),
+        allSettlements: (_, __, {dataSources}) =>
+            dataSources.ssbFlumeAPI.getAllSettlements()
     }
   };

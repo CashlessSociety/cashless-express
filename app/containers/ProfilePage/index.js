@@ -104,6 +104,19 @@ export default function ProfilePage(props) {
                 id
             }
         }
+        settledPromises {
+            amount
+            vestDate
+            nonce
+            claimName
+            author {
+                id
+            }
+        }
+        settlements {
+            tx
+            claimName
+        }
     }}`;
     try {
         let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
@@ -111,6 +124,8 @@ export default function ProfilePage(props) {
             setMyFeed(r.data.data.feed);
             let promises = r.data.data.feed.assets;
             promises.push(...r.data.data.feed.liabilities);
+            promises.push(...r.data.data.feed.settledPromises);
+            console.log(r.data.data.feed.settlements);
             const compare= (a, b) => {
                 let comparison = 0;
                 if (a.vestDate > b.vestDate) {
@@ -304,7 +319,7 @@ export default function ProfilePage(props) {
     // !!!
     // Promises vest in 300 seconds rather than 60 days
     // !!!
-    let vestTime = issueTime+(60*86400 /*300*/);
+    let vestTime = issueTime+(120);
     let voidTime = vestTime+(365*86400);
     promise.from = {id: myFeed.id, commonName: myFeed.commonName, reserves: myFeed.reserves, verifiedAccounts: myFeed.verifiedAccounts};
     if (!sendToEmail) {
@@ -361,8 +376,7 @@ export default function ProfilePage(props) {
         setQueryFeed(null);
         setAmount("0.00");
         setQueryEmail("@gmail.com");
-        await getMyFeed(key.feedKey.id);
-        await getUpdateablePendingPromises(key.feedKey.id);
+        window.location.href = 'http://127.0.0.1:3000/profile';
     }
   }
 
@@ -438,25 +452,25 @@ export default function ProfilePage(props) {
         {loaded ?
         <div className="outerDiv column">
             <div>
+                <h1>Your Feed:</h1>
                 {changeName==false ?
-                <p className="center">
-                    {myFeed.commonName==null ? <span>(unknown)</span>:<span>{myFeed.commonName.name}</span>}
-                    &nbsp;<button className="mini" onClick={handleChangeName}>change name</button>
+                <p>
+                    {myFeed.commonName==null ? <span>(unknown)</span>:<span>{myFeed.commonName.name}</span>}&nbsp;<button className="mini" onClick={handleChangeName}>change name</button>
                 </p>
                 :
-                <p className="center">
+                <p>
                     <input type="text" className="textField" value={newName} onChange={handleNewName}/>
                     &nbsp;<button className="mini" onClick={handleSubmitName}>submit</button>
                 </p>
                 }
-                <p className="center">
+                <p>
                     {myFeed.verifiedAccounts != null ? 
-                        myFeed.verifiedAccounts.map(({handle}) => {return <span><span className="green">{handle} ✔</span>&nbsp;</span>})
+                        myFeed.verifiedAccounts.map(({handle}) => {return <span className="green">{handle} ✔ </span>})
                     :
                     <span></span>
                     }
                 </p>
-                <p className="center">
+                <p>
                     <span className="bold under">Cash Reserves</span>: {'$'+myReservesAmt.toFixed(2)}
                 </p>
                 {myPromises.map(({ claimName, nonce, author }) => {

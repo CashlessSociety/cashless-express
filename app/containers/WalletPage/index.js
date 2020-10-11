@@ -170,7 +170,7 @@ export default function WalletPage(props) {
                 <p className="center marginRight">
                     <input type="text" className="textField" value={queryAmt} onChange={handleQueryAmt}/><button className="mini" onClick={handleTransact}>{!transactSwitch ? 'fund': 'withdraw'}</button>
                 </p>
-                <p className="center marginRight">{isTransacting ? <a className="oldLink" href={"https://"+cashless.network+".etherscan.io/tx/"+lastTxId}>{lastTxId}</a>:<span>{errorMsg!="" ? <span>{errorMsg}</span>:<span>{!transactSwitch ? 'Fund Reserve with USDC':'Withdraw Reserve USDC'}</span>}</span>}</p>
+                <p className="center marginRight">{isTransacting ? <a className="oldLink" href={"https://"+cashless.network+".etherscan.io/tx/"+lastTxId}>view transaction</a>:<span>{errorMsg!="" ? <span>{errorMsg}</span>:<span>{!transactSwitch ? 'Fund Reserve with USDC':'Withdraw Reserve USDC'}</span>}</span>}</p>
                 <p className="center marginRight"><button className="mini" onClick={handleSwitch}>{transactSwitch ? 'fund': 'withdraw'}</button></p>
             </div>
         </div>

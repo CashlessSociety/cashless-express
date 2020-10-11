@@ -104,6 +104,25 @@ class ssbFlumeAPI extends DataSource {
     }
   }
 
+  completeSettlementReducer(msg) {
+      return {
+          type: "COMPLETE_SETTLEMENT",
+          id: msg.key,
+          author: {id: msg.value.author},
+          hash: msg.value.hash.toUpperCase(),
+          header: msg.value.content.header,
+          previous: msg.value.previous,
+          signature: msg.value.signature,
+          timestamp: msg.value.timestamp,
+          claim: msg.value.content.claim,
+          claimName: msg.value.content.claimName,
+          nonce: msg.value.content.nonce,
+          amount: msg.value.content.amount,
+          denomination: msg.value.content.denomination,
+          tx: msg.value.content.tx,
+      }
+  }
+
   async getFeed({ feedId }) {
       let reserves, commonName;
       let cseq = -1;
@@ -135,13 +154,27 @@ class ssbFlumeAPI extends DataSource {
       }
       let allPromises = await this.getAllPromises();
       let promised = [];
+      let settlements = [];
+      let settled = [];
       for (let i=0; i<allPromises.length; i++) {
           if (allPromises[i].isLatest && allPromises[i].recipient.id == feedId) {
-            promised.push(allPromises[i]);
+            let settlement = await this.getSettlementByClaimName({ claimName: allPromises[i].claimName});
+            if (settlement.length==0) {
+                promised.push(allPromises[i]);
+            } else {
+                settlements.push(settlement[0]);
+                settled.push(allPromises[i]);
+            }
           } else if (allPromises[i].isLatest && allPromises[i].recipient.id==null) {
             for (let z=0; z<accounts.length; z++) {
                 if (accounts[z].handle==allPromises[i].recipient.verifiedAccounts[0].handle && allPromises[i].recipient.verifiedAccounts[0].accountType==accounts[z].accountType) {
-                    promised.push(allPromises[i]);
+                    let settlement = await this.getSettlementByClaimName({ claimName: allPromises[i].claimName});
+                    if (settlement.length==0) {
+                        promised.push(allPromises[i]);
+                    } else {
+                        settlements.push(settlement[0]);
+                        settled.push(allPromises[i]);
+                    }
                     break
                 }
             }
@@ -151,7 +184,13 @@ class ssbFlumeAPI extends DataSource {
       let liabilities = [];
       for (let n=0; n<promises.length; n++) {
           if (promises[n].isLatest) {
-            liabilities.push(promises[n]);
+            let settlement = await this.getSettlementByClaimName({ claimName: promises[n].claimName});
+            if (settlement.length==0) {
+                liabilities.push(promises[n]);
+            } else {
+                settlements.push(settlement[0]);
+                settled.push(promises[n]);
+            }
           }
       }
       let feedMsgs = await this.getFeedMessages({ feedId });
@@ -164,6 +203,8 @@ class ssbFlumeAPI extends DataSource {
           reserves: reserves,
           commonName: commonName,
           liabilities: liabilities,
+          settlements: settlements,
+          settledPromises: settled,
       }
   }
 
@@ -216,6 +257,53 @@ class ssbFlumeAPI extends DataSource {
     }
   }
 
+  async getAllSettlementMsgs() {
+    const myQuery = [{
+        "$filter": {
+        value: {
+            content: {
+                type: "cashless/complete-settlement",
+                header: {version: this.version, network: this.network},
+            }
+        }
+      }
+    }];
+    try {
+        let results = await streamPull(
+            this.ssb.client().query.read({
+                query: myQuery,
+            })
+        );
+        return results.map(result => this.completeSettlementReducer(result));
+    } catch(e) {
+        console.log("ERROR QUERYING FLUME DB:", e);
+        return [];
+    } 
+  }
+  async getSettlementByClaimName({ claimName }) {
+    const myQuery = [{
+        "$filter": {
+        value: {
+            content: {
+                type: "cashless/complete-settlement",
+                header: {version: this.version, network: this.network},
+                claimName: claimName,
+            }
+        }
+      }
+    }];
+    try {
+        let results = await streamPull(
+            this.ssb.client().query.read({
+                query: myQuery,
+            })
+        );
+        return results.map(result => this.completeSettlementReducer(result));
+    } catch(e) {
+        console.log("ERROR QUERYING FLUME DB:", e);
+        return [];
+    } 
+  }
   async getPendingPromisesByFeedId({ feedId }) {
     let promises = await this.getPromisesByFeedId({ feedId });
     let output = [];
@@ -363,6 +451,8 @@ class ssbFlumeAPI extends DataSource {
                 output.push(promiseDict[results[i].key]);
             } else if (results[i].value.content.type=="cashless/identity") {
                 output.push(this.identityReducer(results[i]));
+            } else if (results[i].value.content.type=="cashless/complete-settlement") {
+                output.push(this.completeSettlementReducer(results[i]));
             } else {
                 output.push(this.genericReducer(results[i]));
             }

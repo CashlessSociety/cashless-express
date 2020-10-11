@@ -7,6 +7,16 @@
     font-size:0.8em;
 }
 
+.settlementPopup {
+    background-color: grey;
+    border-radius: 1em;
+    border: none;
+    position: fixed;
+    width: auto;
+    height: auto;
+    z-index: 2;
+}
+
 .center {
     text-align: center;
 }
@@ -119,4 +129,8 @@ h1 {
 
 .rightAlign {
     text-align: right;
+}
+
+.under {
+    text-decoration: underline;
 }

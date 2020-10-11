@@ -19,6 +19,8 @@ const typeDefs = gql`
         messages: [Message]
         assets: [PromiseMessage]
         liabilities: [PromiseMessage]
+        settledPromises: [PromiseMessage]
+        settlements: [CompleteSettlementMessage]
     }
 
     type ReservesAddress implements Name {
@@ -101,6 +103,7 @@ const typeDefs = gql`
         amount: Float
         denomination: Denomination
         claimName: ID
+        nonce: Int
         claim: ReservesClaim
         tx: ID
         confirmed: Boolean
@@ -160,6 +163,7 @@ const typeDefs = gql`
         PROMISE
         IDENTITY
         GENERIC
+        COMPLETE_SETTLEMENT
     }
 
     enum EvidenceType {
@@ -189,6 +193,8 @@ const typeDefs = gql`
         promise(claimName: ID!, feedId: ID!, nonce: Int!): PromiseMessage
         messages(feedId: ID!): [Message]
         pendingPromises(feedId: ID!): [PromiseMessage]
+        claimSettlement(claimName: ID!): [CompleteSettlementMessage]
+        allSettlements: [CompleteSettlementMessage]
     }
 `;
 
