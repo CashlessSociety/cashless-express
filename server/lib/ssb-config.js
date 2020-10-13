@@ -15,7 +15,7 @@ module.exports = configInject(process.env.CONFIG_FOLDER || "ssb", {
         {
           scope: "public",
           host: "0.0.0.0",
-          external: "157.245.245.34",
+          external: "127.0.0.1",
           transform: "shs",
           port: process.env.SSB_PORT || 8008,
         },

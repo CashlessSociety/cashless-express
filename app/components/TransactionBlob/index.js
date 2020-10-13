@@ -99,7 +99,7 @@ const getPromise = async (feedId, claimName, nonce) => {
         }
     }}`;
     try {
-        let r = await axios.post('http://157.245.245.34:4000', {query:query}, {});
+        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
         return r.data.data.promise;
     } catch(e) {
         console.log('failed graphql query:', e.message)
@@ -114,7 +114,7 @@ const getVerifiedAccounts = async (feedId) => {
         }
     }}`;
     try {
-        let r = await axios.post('http://157.245.245.34:4000', {query:query}, {});
+        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
         return r.data.data.feed.verifiedAccounts;
     } catch(e) {
         console.log('failed verifiedAccounts query:', e.message);
@@ -130,7 +130,7 @@ const getSettlement = async (claimName) => {
         nonce
     }}`;
     try {
-        let r = await axios.post('http://157.245.245.34:4000', {query:query}, {});
+        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
         console.log(r.data.data);
         if (r.data.data.claimSettlement.length>0) {
             return r.data.data.claimSettlement[0];
@@ -213,7 +213,7 @@ function TransactionBlob(props) {
             setClaimResponse('error: failed to send transaction');
         } else {
             let csMsg = {nonce: promise.nonce, amount: promise.amount, denomination: "USD", claimName: promise.claimName, claim: {data: promise.claim.data, fromSignature: promise.claim.fromSignature, toSignature: {v: receiverSig.v, r: cashless.bufferToHex(receiverSig.r), s:cashless.bufferToHex(receiverSig.s)}}, tx: txh, type: "cashless/complete-settlement", header: {version: cashless.version, network: cashless.network}};
-            let res = await axios.post('http://157.245.245.34:3000/publish', {content: csMsg, key:safeKey(key)}, {});
+            let res = await axios.post('http://127.0.0.1:3000/publish', {content: csMsg, key:safeKey(key)}, {});
             if (res.data.status=="ok") {
                 setClaimResponse('waiting for confirmation...');
                 while (true) {
@@ -222,7 +222,7 @@ function TransactionBlob(props) {
                         break
                     }
                 }
-                window.location.href = 'http://157.245.245.34:3000/profile';
+                window.location.href = 'http://127.0.0.1:3000/profile';
             }
         }
     }

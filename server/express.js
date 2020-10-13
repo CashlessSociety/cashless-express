@@ -345,7 +345,7 @@ module.exports = expressServer;
             }
         }}`;
 
-    const r = await axios.post('http://157.245.245.34:4000', { query }, {});
+    const r = await axios.post('http://127.0.0.1:4000', { query }, {});
     return res.json(r.data.data.allPromises);
   } catch (e) {
     console.log(e);
@@ -372,7 +372,7 @@ app.use('/identities', async (_req, res) => {
           }
         }`;
 
-    const r = await axios.post('http://157.245.245.34:4000', { query }, {});
+    const r = await axios.post('http://127.0.0.1:4000', { query }, {});
     return res.json(r.data.data.allIdMsgs);
   } catch (e) {
     console.log(e);

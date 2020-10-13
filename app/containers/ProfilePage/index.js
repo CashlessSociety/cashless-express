@@ -116,7 +116,7 @@ export default function ProfilePage(props) {
         }
     }}`;
     try {
-        let r = await axios.post('http://157.245.245.34:4000', {query:query}, {});
+        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
         if (r.data.data.feed != null && r.data.data.feed.reserves != null) {
             setMyFeed(r.data.data.feed);
             let promises = [];
@@ -154,7 +154,7 @@ export default function ProfilePage(props) {
 
   const getUpdateablePendingPromises = async (feedId) => {
     const q1 = `query { allFeedIds }`
-    let r1 = await axios.post('http://157.245.245.34:4000', {query:q1}, {});
+    let r1 = await axios.post('http://127.0.0.1:4000', {query:q1}, {});
     let feedIds = r1.data.data.allFeedIds;
     const query = `query { pendingPromises(feedId:"`+feedId+`") {
         claimName
@@ -169,7 +169,7 @@ export default function ProfilePage(props) {
     }}`;
     let updateablePromises = [];
     try {
-        let r = await axios.post('http://157.245.245.34:4000', {query:query}, {});
+        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
         if (r.data.data.pendingPromises!=null && r.data.data.pendingPromises.length>0) {
             for (let j=0; j<feedIds.length; j++) {
                 const q2 = `query { feed(id:"`+feedIds[j]+`") {
@@ -186,7 +186,7 @@ export default function ProfilePage(props) {
                         accountType
                     }
                 }}`;
-                let r2 = await axios.post('http://157.245.245.34:4000', {query:q2}, {});
+                let r2 = await axios.post('http://127.0.0.1:4000', {query:q2}, {});
                 if (r2.data.data.feed.verifiedAccounts != null && r2.data.data.feed.verifiedAccounts.length>0) {
                     for (let i=0; i<r.data.data.pendingPromises.length; i++) {
                         if (r.data.data.pendingPromises[i].recipient.verifiedAccounts[0].handle == r2.data.data.feed.verifiedAccounts[0].handle) {
@@ -253,7 +253,7 @@ export default function ProfilePage(props) {
           }
         }`;
       
-        let r = await axios.post('http://157.245.245.34:4000', {query:query}, {});
+        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
         if (r.data.data.feed.reserves.address != null) {
             setQueryFeed(r.data.data.feed);
         }
@@ -283,7 +283,7 @@ export default function ProfilePage(props) {
   const handleSubmitName = async evt => {
     let idmsg = {feed: {id: key.feedKey.id}, name: {type:"COMMON", name: newName, id:uuid()}, type: "cashless/identity", header: {version: cashless.version, network: cashless.network}, evidence:null};
     try {
-        let r = await axios.post('http://157.245.245.34:3000/publish', {content: idmsg, key:safeKey(key)}, {});
+        let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg, key:safeKey(key)}, {});
         if (r.data.status=="ok") {
             console.log('reset name!');
             setChangeName(false);
@@ -359,7 +359,7 @@ export default function ProfilePage(props) {
         promise.to = {verifiedAccounts: [{handle: queryEmail, accountType:"GOOGLE"}]};
         promise.promise = {nonce:0, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime};
     }
-    let res = await axios.post('http://157.245.245.34:3000/publish', {content: promise, key:safeKey(key)}, {});
+    let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise, key:safeKey(key)}, {});
     if (res.data.status=="ok") {
         if (!sendToEmail) {
             setPublishResponse("published promise!");
@@ -415,7 +415,7 @@ export default function ProfilePage(props) {
     }
     promise.to = {id: pendingPromise.id, reserves: pendingPromise.reserves, commonName: pendingPromise.commonName, verifiedAccounts: pendingPromise.promise.recipient.verifiedAccounts};
     promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(amount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: cashless.bufferToHex(claimSig.r), s: cashless.bufferToHex(claimSig.s)}, claimData:cashless.bufferToHex(claimData)};
-    let res = await axios.post('http://157.245.245.34:3000/publish', {content: promise, key:safeKey(key)}, {});
+    let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise, key:safeKey(key)}, {});
     if (res.data.status=="ok") {
         setMyFeed(null);
         setSeeTransactions(false);

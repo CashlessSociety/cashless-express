@@ -91,7 +91,7 @@ export default function ProfilePage(props) {
         }
     }}`;
     try {
-        let r = await axios.post('http://157.245.245.34:4000', {query:query}, {});
+        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
         if (r.data.data.feed != null && r.data.data.feed.reserves != null) {
             setMyFeed(r.data.data.feed);
             let promises = [];
