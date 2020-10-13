@@ -53,7 +53,7 @@ export default function HomePage(props) {
         }
     }}`;
     try {
-        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        let r = await axios.post('http://157.245.245.34:4000', {query:query}, {});
         if (r.data.data.feed.id == feedId && r.data.data.feed.reserves.address == address) {
             return true;
         }
@@ -80,7 +80,7 @@ export default function HomePage(props) {
     let key = await newKey(useMetamask);
     let idmsg = {feed: {id: key.feedKey.id}, name: {type:"RESERVES", address: key.address}, type: "cashless/identity", header: {version: cashless.version, network: cashless.network}, evidence:null};
     try {
-        let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg, key:safeKey(key)}, {});
+        let r = await axios.post('http://157.245.245.34:3000/publish', {content: idmsg, key:safeKey(key)}, {});
         if (r.data.status=="ok") {
             console.log("published id msg!");
             let ok = await hasFeed(key.feedKey.id, key.address);

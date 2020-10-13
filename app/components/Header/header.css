@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap');
 
 .banner {
-    width: 90%;
-    margin: auto auto;
+    width: 15%;
+    margin: 0;
     display: block;
 }
 
@@ -17,6 +17,7 @@ button.header {
     margin: 1em;
     font-size: 1.5em;
     outline:none;
+    margin-top: 2em;
 }
 
 button:hover {
@@ -26,6 +27,13 @@ button:hover {
 
 .cen {
     text-align:center;
+}
+
+.oDiv {
+    width: 100%;
+    align-content: right;
+    display: flex;
+    flex-direction: row;
 }
 
 

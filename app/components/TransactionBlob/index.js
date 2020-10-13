@@ -99,7 +99,7 @@ const getPromise = async (feedId, claimName, nonce) => {
         }
     }}`;
     try {
-        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        let r = await axios.post('http://157.245.245.34:4000', {query:query}, {});
         return r.data.data.promise;
     } catch(e) {
         console.log('failed graphql query:', e.message)
@@ -114,7 +114,7 @@ const getVerifiedAccounts = async (feedId) => {
         }
     }}`;
     try {
-        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        let r = await axios.post('http://157.245.245.34:4000', {query:query}, {});
         return r.data.data.feed.verifiedAccounts;
     } catch(e) {
         console.log('failed verifiedAccounts query:', e.message);
@@ -130,7 +130,7 @@ const getSettlement = async (claimName) => {
         nonce
     }}`;
     try {
-        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        let r = await axios.post('http://157.245.245.34:4000', {query:query}, {});
         console.log(r.data.data);
         if (r.data.data.claimSettlement.length>0) {
             return r.data.data.claimSettlement[0];
@@ -175,6 +175,8 @@ function TransactionBlob(props) {
         let contract = cashless.contract(providerURL, null);
         let libContract = cashless.libContract(providerURL);
         let claimSig;
+        let addr = promise.recipient.reserves.address;
+        let prevRes = await getReservesAmount(addr);
         if (key.private != null) {
             let wallet = cashless.wallet(providerURL, key.private);
             contract = contract.connect(wallet);
@@ -211,9 +213,16 @@ function TransactionBlob(props) {
             setClaimResponse('error: failed to send transaction');
         } else {
             let csMsg = {nonce: promise.nonce, amount: promise.amount, denomination: "USD", claimName: promise.claimName, claim: {data: promise.claim.data, fromSignature: promise.claim.fromSignature, toSignature: {v: receiverSig.v, r: cashless.bufferToHex(receiverSig.r), s:cashless.bufferToHex(receiverSig.s)}}, tx: txh, type: "cashless/complete-settlement", header: {version: cashless.version, network: cashless.network}};
-            let res = await axios.post('http://127.0.0.1:3000/publish', {content: csMsg, key:safeKey(key)}, {});
+            let res = await axios.post('http://157.245.245.34:3000/publish', {content: csMsg, key:safeKey(key)}, {});
             if (res.data.status=="ok") {
-                window.location.href = 'http://127.0.0.1:3000/profile';
+                setClaimResponse('waiting for confirmation...');
+                while (true) {
+                    let newRes = await getReservesAmount(promise.recipient.reserves.address);
+                    if (newRes-prevRes==promise.amount) {
+                        break
+                    }
+                }
+                window.location.href = 'http://157.245.245.34:3000/profile';
             }
         }
     }
@@ -274,7 +283,7 @@ function TransactionBlob(props) {
                         <col className="width40"></col>
                         <tbody>
                         <tr>
-                            <td><h1><span className={promise.nonce==0 ? "yellow":!isMyAsset && !isMyLiability ? "black":isMyAsset ? "green": "red"}><strong>{!isMyAsset && !isMyLiability ? "":isMyAsset ? "+":"-"}${promise.amount.toFixed(2)}</strong></span>&nbsp;{promise.nonce==0 ? <span className="yellow smaller"><br></br>(pending)</span>:<span></span>}</h1></td>
+                            <td><h1><span className={promise.nonce==0 ? "yellow":!isMyAsset && !isMyLiability ? "black":isMyAsset ? "green": "red"}><strong>{!isMyAsset && !isMyLiability ? "":isMyAsset ? "+":"-"}${promise.amount.toFixed(2)}</strong></span>&nbsp;{promise.nonce==0 ? <span className="yellow smaller"><br></br>(awaiting confirmation)</span>:<span></span>}</h1></td>
                             <td><h1>From: <strong><Link to={"/feed/"+encode(promise.author.id.substring(1, promise.author.id.length-8))} className="oldLink">{promise.author.commonName == null ? promise.author.id.substring(0, 10)+'...': promise.author.commonName.name}</Link></strong></h1></td>
                             <td><h1>To: <strong>{promise.recipient.id == null ? <span className="smaller">{promise.recipient.verifiedAccounts[0].handle}</span>:<Link to={"/feed/"+encode(promise.recipient.id.substring(1, promise.recipient.id.length-8))} className="oldLink">{promise.recipient.commonName==null ? promise.recipient.id.substring(0, 8)+'...':<span>{promise.recipient.commonName.name==null ? promise.recipient.id.substring(0, 8)+'...':promise.recipient.commonName.name}</span>}</Link>}</strong></h1></td>
                         </tr>
@@ -282,11 +291,10 @@ function TransactionBlob(props) {
                     </table>
                     {!props.isStub ?
                     <span>
-                        <p className="largeP">Status: {settled ? !promise.isLatest ? <span className="red">(nonce out-of-date)</span>:<span className="under">SETTLED</span>:<span>{!promise.isLatest ? <span className="red">(nonce out-of-date)</span>:<span>{promise.nonce==0 ? <span className="yellow">(pending claim)</span>:<span>{Number(promise.vestDate)-now()>0 ? <span className="green">(vesting)</span>:<span className="green">(vested)</span>}</span>}</span>}</span>}</p>
-                        {Number(promise.vestDate)-now()>0 && promise.isLatest ? <p className="largeP">Due Date: {(new Date(promise.vestDate*1000)).toLocaleString()}</p>:<p>{isMyAsset && promise.isLatest && !settled ? <button className="mini" onClick={handleClaimPromise}>claim!</button>:<span></span>}</p>}
-                        {promise.isLatest && !settled ? <p className="largeP">From Account Balance: {reservesAmt>=promise.amount ? <span className="green">${reservesAmt.toFixed(2)}</span>:<span className="red">${reservesAmt.toFixed(2)}</span>}</p>:<p></p>}
-                        {promise.claim.data != null && promise.isLatest && !settled ? <p className="largeP">Risk of Default: <span>{reservesAmt < promise.amount ? <span className="red">high</span>:<span className="green">low</span>}</span></p>:<p></p>}
-                        <p className="largeP">Nonce: {promise.nonce}</p>
+                        <p className="largeP">Status: {settled ? !promise.isLatest ? <span className="red">(out-of-date)</span>:<span className="under">SETTLED</span>:<span>{!promise.isLatest ? <span className="red">(nonce out-of-date)</span>:<span>{promise.nonce==0 ? <span className="yellow">(awaiting confirmation)</span>:<span>{Number(promise.vestDate)-now()>0 ? <span className="green">(awaiting due date)</span>:<span className="green">(awaiting settlement)</span>}</span>}</span>}</span>}</p>
+                        {Number(promise.vestDate)-now()>0 && promise.isLatest ? <p className="largeP">Due Date: {(new Date(promise.vestDate*1000)).toLocaleString()}</p>:<p>{isMyAsset && promise.isLatest && !settled && promise.nonce>0 ? <button className="mini" onClick={handleClaimPromise}>claim!</button>:<span></span>}</p>}
+                        {promise.isLatest && !settled ? <p className="largeP">Sufficient Reserves: {reservesAmt>=promise.amount ? <span className="green">yes</span>:<span className="red">no</span>}</p>:<p></p>}
+                        {promise.isLatest && !settled && Number(promise.vestDate)-now()>0 ? <p className="largeP">Risk of Default: <span>{reservesAmt < promise.amount ? <span className="red">high</span>:<span className="green">low</span>}</span></p>:<p></p>}
                         {seeDetails ?
                         <span>
                             <br></br>
@@ -295,6 +303,7 @@ function TransactionBlob(props) {
                             <p>Message ID: {promise.id}</p>
                             <p>Message Timestamp: {promise.timestamp}</p>
                             <p>Claim Name: {promise.claimName}</p>
+                            <p>Nonce: {promise.nonce}</p>
                             <p>Recipient ID: {promise.recipient.id != null ? promise.recipient.id:'(unknown)'}</p>
                             <p>Author Account: {promise.author.reserves.address}</p>
                             <p>Recipient Account: {promise.recipient.reserves != null ? promise.recipient.reserves.address:'(unknown)'}</p>
@@ -316,7 +325,7 @@ function TransactionBlob(props) {
                             <col className="width40"></col>
                             <tr>
                                 <td>{settled ? <p className="largeP under">SETTLED</p>:<span>{Number(promise.vestDate)-now()>0 && promise.isLatest ? <p className="largeP">Due Date: {(new Date(promise.vestDate*1000)).toLocaleString()}</p>:<p className={isMyAsset ? "green": "black"}>Available Now!</p>}</span>}</td>
-                                <td><p className="rightAlign largeP"><Link to={"/promise/"+encode(promise.author.id.substring(1, promise.author.id.length-8))+"/"+promise.claimName} className="oldLink">see claim</Link>&nbsp;</p></td>
+                                <td><p className="rightAlign largeP"><Link to={"/promise/"+encode(promise.author.id.substring(1, promise.author.id.length-8))+"/"+promise.claimName} className="oldLink">details</Link>&nbsp;</p></td>
                             </tr>
                         </table>
                     </span>

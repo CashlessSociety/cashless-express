@@ -19,7 +19,7 @@ const getPromiseChain = async (feedId, claimName) => {
             nonce
         }}`;
     try {
-        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        let r = await axios.post('http://157.245.245.34:4000', {query:query}, {});
         if (r.data.data.promiseChain != null) {
             let promises = r.data.data.promiseChain;
 
@@ -44,13 +44,17 @@ const getPromiseChain = async (feedId, claimName) => {
 
 export default function TxDetailsPage(props) {
     const [loaded, setLoaded] = useState(false);
-    const [promises, setPromises] = useState(null);
+    const [latestPromise, setLatestPromise] = useState(null);
+    const [promises, setPromises] = useState([]);
     const feedId = "@"+decode(props.match.params.feedId)+".ed25519";
     const claimName = props.match.params.claimName;
   
     const load = async () => {
         let promiseChain = await getPromiseChain(feedId, claimName);
-        setPromises(promiseChain);
+        setLatestPromise(promiseChain[0]);
+        if (promiseChain.length > 1) {
+            setPromises(promiseChain.slice(1));
+        }
         setLoaded(true);
     }
 
@@ -66,6 +70,8 @@ export default function TxDetailsPage(props) {
         </Helmet>
         {loaded ?
         <div className="outerDiv center">
+            <TransactionBlob nonce={latestPromise.nonce} claimName={claimName} feedId={feedId}/>
+            {promises.length>0 ? <p>Transaction History:</p>:<p></p>}
             {promises.map(({ nonce }) => {return <TransactionBlob nonce={nonce} claimName={claimName} feedId={feedId}/>;})}
         </div>
         :

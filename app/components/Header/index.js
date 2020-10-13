@@ -1,6 +1,6 @@
 import React from 'react';
 import Img from 'components/Img';
-import Banner from 'images/cashlessbanner.png';
+import Banner from 'images/icon-512x512.png';
 import './header.css';
 import { Link } from 'react-router-dom';
 
@@ -8,13 +8,11 @@ function Header() {
 
   return (
     <div>
-        <div className="cen">
+        <div className="oDiv">
+            <Img className="banner" src={Banner} alt="cashless.social"></Img>
             <Link to="/profile"><button className="header">Portfolio</button></Link>
             <Link to="/wallet"><button className="header">Wallet</button></Link>
-            <Link to="/explore"><button className="header">Explore</button></Link>
-        </div>
-        <div>
-            <Img className="banner" src={Banner} alt="cashless.social"></Img>
+            <Link to="/"><button className="header">Sign In</button></Link>
         </div>
     </div>
   );
