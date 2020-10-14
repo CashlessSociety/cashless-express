@@ -175,8 +175,6 @@ function TransactionBlob(props) {
         let contract = cashless.contract(providerURL, null);
         let libContract = cashless.libContract(providerURL);
         let claimSig;
-        let addr = promise.recipient.reserves.address;
-        let prevRes = await getReservesAmount(addr);
         if (key.private != null) {
             let wallet = cashless.wallet(providerURL, key.private);
             contract = contract.connect(wallet);
@@ -216,12 +214,9 @@ function TransactionBlob(props) {
             let res = await axios.post('http://127.0.0.1:3000/publish', {content: csMsg, key:safeKey(key)}, {});
             if (res.data.status=="ok") {
                 setClaimResponse('waiting for confirmation...');
-                while (true) {
-                    let newRes = await getReservesAmount(promise.recipient.reserves.address);
-                    if (newRes-prevRes==promise.amount) {
-                        break
-                    }
-                }
+                let provider = new ethers.providers.JsonRpcProvider(providerURL);
+                let txr = await provider.getTransactionReceipt(txh);
+                console.log(txr);
                 window.location.href = 'http://127.0.0.1:3000/profile';
             }
         }
@@ -324,7 +319,7 @@ function TransactionBlob(props) {
                             <col className="width60"></col>
                             <col className="width40"></col>
                             <tr>
-                                <td>{settled ? <p className="largeP under">SETTLED</p>:<span>{Number(promise.vestDate)-now()>0 && promise.isLatest ? <p className="largeP">Due Date: {(new Date(promise.vestDate*1000)).toLocaleString()}</p>:<p className={isMyAsset ? "green": "black"}>Available Now!</p>}</span>}</td>
+                                <td>{settled ? <p className="largeP"><span className="under">SETTLED</span> <a className="oldLink" href={"https://"+cashless.network+".etherscan.io/tx/"+settlement.tx}>see</a></p>:<span>{Number(promise.vestDate)-now()>0 ? <p className="largeP">Due Date: {(new Date(promise.vestDate*1000)).toLocaleString()}</p>:<span>{promise.isLatest && !settled && promise.nonce>0 ? isMyAsset ? <p><button className="mini" onClick={handleClaimPromise}>claim!</button></p>:<p>Available Now!</p>:<span></span>}</span>}</span>}</td>
                                 <td><p className="rightAlign largeP"><Link to={"/promise/"+encode(promise.author.id.substring(1, promise.author.id.length-8))+"/"+promise.claimName} className="oldLink">details</Link>&nbsp;</p></td>
                             </tr>
                         </table>

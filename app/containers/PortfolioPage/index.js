@@ -161,7 +161,7 @@ export default function ProfilePage(props) {
         <div className="outerDiv column">
             <div>
                 <p>
-                    {myFeed.commonName==null ? <span>(unknown)</span>:<span>{myFeed.commonName.name}</span>}&nbsp;
+                    <span className="bold under">Name</span>: {myFeed.commonName==null ? <span>(unknown)</span>:<span>{myFeed.commonName.name}</span>}&nbsp;
                 </p>
                 <p>
                     {myFeed.verifiedAccounts != null ? 
