@@ -59,7 +59,7 @@ export default function ProfilePage(props) {
   const [queryEmail, setQueryEmail] = useState("@gmail.com");
   const [promiseAmount, setAmount] = useState("0.00");
   const [queryFeed, setQueryFeed] = useState(null);
-  const [publishResponse, setPublishResponse] = useState("Send a promise due in 60 days");
+  const [publishResponse, setPublishResponse] = useState("Make a promise, due in 60 days");
 
   const [sendToEmail, setSendToEmail] = useState(false);
   const [changeName, setChangeName] = useState(false);
@@ -68,6 +68,8 @@ export default function ProfilePage(props) {
   const [isMetamask, setIsMetamask] = useState(false);
   const [seeTransactions, setSeeTransactions] = useState(false);
   const [showSend, setShowSend] = useState(false);
+  const [showCopyText, setShowCopyText] = useState(false);
+  const [copyText, setCopyText] = useState("");
 
   const getMyFeed = async (feedId) => {
     const query = `query { feed(id:"`+feedId+`") {
@@ -361,11 +363,6 @@ export default function ProfilePage(props) {
     }
     let res = await axios.post('http://157.245.245.34:3000/publish', {content: promise, key:safeKey(key)}, {});
     if (res.data.status=="ok") {
-        if (!sendToEmail) {
-            setPublishResponse("published promise!");
-        } else {
-            setPublishResponse("published promise (to: '"+queryEmail+"')");
-        }
         setMyFeed(null);
         setQueryId("@");
         setQueryFeed(null);
@@ -373,6 +370,10 @@ export default function ProfilePage(props) {
         setQueryEmail("@gmail.com");
         setShowSend(false);
         setSeeTransactions(false);
+        if (sendToEmail) {
+            setCopyText("<--- Your Message ---> claim $"+promiseAmount+" here: http://157.245.245.34:3000/join/auth/"+queryEmail);
+            setShowCopyText(true);
+        }
         await getMyFeed(key.feedKey.id);
         await getUpdateablePendingPromises(key.feedKey.id);
     }
@@ -450,6 +451,20 @@ export default function ProfilePage(props) {
       setShowSend(true);
   }
 
+  const handleChangeCopyText = evt => {
+      setCopyText(evt.target.value);
+  }
+
+  const handleCopyText = _evt => {
+    let text = document.getElementById("copyThis");
+    text.select();
+    document.execCommand("copy");
+  }
+
+  const handleHideCopy = _evt => {
+    setShowCopyText(false);
+  }
+
   useEffect(() => {
     (async () => await load())();
   }, []);
@@ -483,13 +498,13 @@ export default function ProfilePage(props) {
                     }
                 </p>
                 <p>
-                    <span className="bold under">Cash Reserves</span>: {'$'+myReservesAmt.toFixed(2)}
+                    <span className="bold">Cash Reserves</span>: {'$'+myReservesAmt.toFixed(2)}
                 </p>
                 <p>
-                    <span className="bold under">Incoming</span>: {renderAssets()}
+                    <span className="bold">Incoming</span>: {renderAssets()}
                 </p>
                 <p>
-                    <span className="bold under">Outgoing</span>: {renderLiabilities()}
+                    <span className="bold">Outgoing</span>: {renderLiabilities()}
                 </p>
             </div>
             {!seeTransactions ?
@@ -513,7 +528,7 @@ export default function ProfilePage(props) {
                 <p>
                     {sendToEmail==false ?
                     <span>
-                        <span className="bold under">ID</span>:&nbsp;
+                        <span className="bold">ID</span>:&nbsp;
                         {queryFeed==null  ?
                             <span><input type="text" className="textField" value={queryId} onChange={handleQueryId}/> <button className="mini" onClick={handleSendToEmail}>send to email</button></span>
                             :
@@ -522,13 +537,13 @@ export default function ProfilePage(props) {
                     </span>
                     :
                     <span>
-                        <span className="bold under">Email</span>:&nbsp;
+                        <span className="bold">Email</span>:&nbsp;
                         <input type="text" className="textField" value={queryEmail} onChange={handleQueryEmail}/> <button className="mini" onClick={handleSendToId}>send to id</button>
                     </span>
                     }   
                 </p>
                 <p>
-                    <span className="bold under">Amount</span>:&nbsp;<input type="text" className="textField" value={promiseAmount} onChange={handleAmount}/>
+                    <span className="bold">Amount</span>:&nbsp;<input type="text" className="textField" value={promiseAmount} onChange={handleAmount}/>
                 </p>
                 <button className="blackButton" onClick={handlePublish}>
                     send
@@ -541,6 +556,17 @@ export default function ProfilePage(props) {
                     make a promise
                 </button>
             </div>
+            }
+            {showCopyText ?
+            <div>
+                <p>
+                    <textarea id="copyThis" value={copyText} onChange={handleChangeCopyText} rows="2" cols="60"/>
+                    <br></br>
+                    <button className="mini" onClick={handleCopyText}>copy to clipboard</button> <button className="mini" onClick={handleHideCopy}>done</button>
+                </p>
+            </div>
+            :
+            <div></div>
             }
         </div>
         :
