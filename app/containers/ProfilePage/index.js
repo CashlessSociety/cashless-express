@@ -568,7 +568,7 @@ export default function ProfilePage(props) {
                     <span className="bold">Note</span>:&nbsp;<input type="text" className="textField" value={memo} onChange={handleMemo}/>
                 </p>
                 <p>
-                    <span className="bold">Rating</span> (1-5):&nbsp;<input type="text" className="textField" value={rating} onChange={handleRating}/>
+                    <span className="bold">Quality Rating</span> (1-5):&nbsp;<input type="text" className="textField" value={rating} onChange={handleRating}/>
                 </p>
                 <button className="blackButton" onClick={handlePublish}>
                     send
