@@ -65,6 +65,9 @@ export default function ProfilePage(props) {
   const [changeName, setChangeName] = useState(false);
   const [newName, setNewName] = useState("");
 
+  const [memo, setMemo] = useState("");
+  const [rating, setRating] = useState("");
+
   const [isMetamask, setIsMetamask] = useState(false);
   const [seeTransactions, setSeeTransactions] = useState(false);
   const [showSend, setShowSend] = useState(false);
@@ -309,6 +312,14 @@ export default function ProfilePage(props) {
         setPublishResponse("promised amount cannot be zero");
         return
     }
+    if (isNaN(Number(rating))) {
+        setPublishResponse("rating must be a number (1-5)");
+        return
+    }
+    if (Number(rating)>5 || Number(rating)<1) {
+        setPublishResponse("rating must be 1-5");
+        return
+    }
     let promise = {type: "cashless/promise", header: {version: cashless.version, network: cashless.network}};
     let claimName = cashless.bufferToHex(cashless.randomHash());
     let issueTime = now();
@@ -349,7 +360,7 @@ export default function ProfilePage(props) {
             return
         }
         promise.to = queryFeed;
-        promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: cashless.bufferToHex(claimSig.r), s: cashless.bufferToHex(claimSig.s)}, claimData:cashless.bufferToHex(claimData)};
+        promise.promise = {serviceRating: Number(rating), memo: memo, nonce:1, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: cashless.bufferToHex(claimSig.r), s: cashless.bufferToHex(claimSig.s)}, claimData:cashless.bufferToHex(claimData)};
     } else {
         //
         // Enforce GMAIL emails ONLY... but there are google accounts that dont end with @gmail.com
@@ -359,7 +370,7 @@ export default function ProfilePage(props) {
             return
         }*/
         promise.to = {verifiedAccounts: [{handle: queryEmail, accountType:"GOOGLE"}]};
-        promise.promise = {nonce:0, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime};
+        promise.promise = {serviceRating: Number(rating), memo:memo, nonce:0, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime};
     }
     let res = await axios.post('http://157.245.245.34:3000/publish', {content: promise, key:safeKey(key)}, {});
     if (res.data.status=="ok") {
@@ -371,7 +382,7 @@ export default function ProfilePage(props) {
         setShowSend(false);
         setSeeTransactions(false);
         if (sendToEmail) {
-            setCopyText("<--- Your Message ---> claim $"+promiseAmount+" here: http://157.245.245.34:3000/join/auth/"+queryEmail);
+            setCopyText(memo+" claim $"+promiseAmount+" here: http://157.245.245.34:3000/join/auth/"+queryEmail);
             setShowCopyText(true);
         }
         await getMyFeed(key.feedKey.id);
@@ -465,6 +476,14 @@ export default function ProfilePage(props) {
     setShowCopyText(false);
   }
 
+  const handleRating = evt => {
+      setRating(evt.target.value);
+  }
+
+  const handleMemo = evt => {
+      setMemo(evt.target.value);
+  }
+
   useEffect(() => {
     (async () => await load())();
   }, []);
@@ -544,6 +563,12 @@ export default function ProfilePage(props) {
                 </p>
                 <p>
                     <span className="bold">Amount</span>:&nbsp;<input type="text" className="textField" value={promiseAmount} onChange={handleAmount}/>
+                </p>
+                <p>
+                    <span className="bold">Note</span>:&nbsp;<input type="text" className="textField" value={memo} onChange={handleMemo}/>
+                </p>
+                <p>
+                    <span className="bold">Rating</span> (1-5):&nbsp;<input type="text" className="textField" value={rating} onChange={handleRating}/>
                 </p>
                 <button className="blackButton" onClick={handlePublish}>
                     send

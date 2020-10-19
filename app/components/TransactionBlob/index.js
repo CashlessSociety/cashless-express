@@ -56,6 +56,8 @@ const getPromise = async (feedId, claimName, nonce) => {
         isLatest
         sequence
         timestamp
+        memo
+        serviceRating
         author {
             id
             reserves {
@@ -291,6 +293,8 @@ function TransactionBlob(props) {
                     </table>
                     {!props.isStub ?
                     <span>
+                        {promise.isLatest ? <p className="largeP">Note: {promise.memo}</p>:<span></span>}
+                        {promise.isLatest ? <p className="largeP">Service Rating: {promise.serviceRating}</p>:<span></span>}
                         <p className="largeP">Status: {settled ? !promise.isLatest ? <span className="red">(out-of-date)</span>:<span className="under">SETTLED</span>:<span>{!promise.isLatest ? <span className="red">(nonce out-of-date)</span>:<span>{promise.nonce==0 ? <span className="yellow">(awaiting confirmation)</span>:<span>{Number(promise.vestDate)-now()>0 ? <span className="green">(awaiting due date)</span>:<span className="green">(awaiting settlement)</span>}</span>}</span>}</span>}</p>
                         {Number(promise.vestDate)-now()>0 && promise.isLatest ? <p className="largeP">Due Date: {(new Date(promise.vestDate*1000)).toLocaleString()}</p>:<p>{isMyAsset && promise.isLatest && !settled && promise.nonce>0 ? <button className="mini" onClick={handleClaimPromise}>claim!</button>:<span></span>}</p>}
                         {promise.isLatest && !settled ? <p className="largeP">Sufficient Reserves: {reservesAmt>=promise.amount ? <span className="green">yes</span>:<span className="red">no</span>}</p>:<p></p>}
