@@ -171,6 +171,8 @@ export default function ProfilePage(props) {
         }
         amount
         vestDate
+        memo
+        serviceRating
     }}`;
     let updateablePromises = [];
     try {
@@ -426,7 +428,7 @@ export default function ProfilePage(props) {
         return
     }
     promise.to = {id: pendingPromise.id, reserves: pendingPromise.reserves, commonName: pendingPromise.commonName, verifiedAccounts: pendingPromise.promise.recipient.verifiedAccounts};
-    promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(amount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: cashless.bufferToHex(claimSig.r), s: cashless.bufferToHex(claimSig.s)}, claimData:cashless.bufferToHex(claimData)};
+    promise.promise = {memo: pendingPromise.promise.memo, serviceRating: pendingPromise.promise.serviceRating, nonce:1, claimName: claimName, denomination:"USD", amount: Number(amount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: cashless.bufferToHex(claimSig.r), s: cashless.bufferToHex(claimSig.s)}, claimData:cashless.bufferToHex(claimData)};
     let res = await axios.post('http://157.245.245.34:3000/publish', {content: promise, key:safeKey(key)}, {});
     if (res.data.status=="ok") {
         setMyFeed(null);
