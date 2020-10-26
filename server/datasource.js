@@ -346,7 +346,7 @@ class ssbFlumeAPI extends DataSource {
         }
         let keys = Object.keys(promiseMap);
         let finalPromises = [];
-        for (let i=0; i<keys; i++) {
+        for (let i=0; i<keys.length; i++) {
             let pList = promiseMap[keys[i]];
             let proms = pList.sort((a, b) => (a.nonce > b.nonce) ? -1 : 1);
             proms[0].isLatest = true;
