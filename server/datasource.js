@@ -129,6 +129,14 @@ class ssbFlumeAPI extends DataSource {
       let rseq;
       let idMsgs = await this.getIdMsgsByFeedId({ feedId });
       let accounts = [];
+      // Not the most efficient to search through all of the Id Messages from pub, every time
+      let evidenceMsgs = await this.getIdMsgsByFeedId({feedId: ssb.client().id});
+      let evidenceMap = {};
+      for (let k=0; k<evidenceMsgs.length; k++) {
+        if (evidenceMsgs[k].feed.id==feedId) {
+            evidenceMap[evidenceMsgs[k].id] = evidenceMsgs[k];
+        }
+      }
       for (let j=0; j<idMsgs.length; j++) {
         if (idMsgs[j].feed.id == feedId) {
             if (idMsgs[j].name.type == "COMMON" && cseq<idMsgs[j].sequence) {
@@ -140,14 +148,12 @@ class ssbFlumeAPI extends DataSource {
                 rseq = idMsgs[j].sequence;
             }
             if (idMsgs[j].name.type == "ACCOUNT") {
-                let msgs = await this.getIdMsgsByFeedId({feedId: ssb.client().id});
-                for (let k=0; k<msgs.length; k++) {
-                    if (msgs[k].id == idMsgs[j].evidence.id) {
-                        if (msgs[k].feed.id==feedId && msgs[k].name.type=="ACCOUNT" && msgs[k].name.handle==idMsgs[j].name.handle) {
-                            accounts.push(idMsgs[j].name);
-                        }
-                        break
+                eMsg = evidenceMap[idMsgs[j].evidence.id];
+                if (eMsg !== undefined) {
+                    if (eMsg.name.type=="ACCOUNT" && eMsg.name.handle==idMsgs[j].name.handle && eMsg.name.accountType==idMsgs[j].name.accountType) {
+                        accounts.push(idMsgs[j].name);
                     }
+                    break
                 }
             }
         }
@@ -156,6 +162,10 @@ class ssbFlumeAPI extends DataSource {
       let promised = [];
       let settlements = [];
       let settled = [];
+      let accountStubs = [];
+      for (let z=0; z<accounts.length; z++) {
+          accountStubs.push(accounts[z].accountType+accounts[z].handle);
+      }
       for (let i=0; i<allPromises.length; i++) {
           if (allPromises[i].isLatest && allPromises[i].recipient.id == feedId) {
             let settlement = await this.getSettlementByClaimName({ claimName: allPromises[i].claimName});
@@ -165,18 +175,9 @@ class ssbFlumeAPI extends DataSource {
                 settlements.push(settlement[0]);
                 settled.push(allPromises[i]);
             }
-          } else if (allPromises[i].isLatest && allPromises[i].recipient.id==null) {
-            for (let z=0; z<accounts.length; z++) {
-                if (accounts[z].handle==allPromises[i].recipient.verifiedAccounts[0].handle && allPromises[i].recipient.verifiedAccounts[0].accountType==accounts[z].accountType) {
-                    let settlement = await this.getSettlementByClaimName({ claimName: allPromises[i].claimName});
-                    if (settlement.length==0) {
-                        promised.push(allPromises[i]);
-                    } else {
-                        settlements.push(settlement[0]);
-                        settled.push(allPromises[i]);
-                    }
-                    break
-                }
+          } else if (allPromises[i].isLatest && allPromises[i].recipient.id==null) {             
+            if (accountStubs.includes(allPromises[i].recipient.verifiedAccounts[0].accountType+allPromises[i].recipient.verifiedAccounts[0].handle)) {
+                promised.push(allPromises[i]);
             }
           }
       }
@@ -334,18 +335,24 @@ class ssbFlumeAPI extends DataSource {
             })
         );
         let promises = results.map(result => this.promiseReducer(result));
-        // TODO: this can be done more efficiently/elegantly
-        for (let i=0; i<promises.length; i++) {
-            let isLatest = true;
-            for (let j=0; j<promises.length; j++) {
-                if (promises[j].claimName==promises[i].claimName && promises[j].nonce>promises[i].nonce) {
-                    isLatest = false;
-                    break
-                }
+        let promiseMap = {};
+        for (let j=0; j<promises.length; j++) {
+            promises[j].isLatest = false;
+            if (promiseMap[promises[j].claimName] !== undefined) {
+                promiseMap[promises[j].claimName].push(promises[j]);
+            } else {
+                promiseMap[promises[j].claimName] = [promises[j]];
             }
-            promises[i].isLatest = isLatest;
         }
-        return promises;
+        let keys = Object.keys(promiseMap);
+        let finalPromises = [];
+        for (let i=0; i<keys; i++) {
+            let pList = promiseMap[keys[i]];
+            let proms = pList.sort((a, b) => (a.nonce > b.nonce) ? -1 : 1);
+            proms[0].isLatest = true;
+            finalPromises.push(...proms);
+        }
+        return finalPromises;
     } catch(e) {
         console.log("ERROR QUERYING FLUME DB:", e);
         return [];
