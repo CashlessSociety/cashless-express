@@ -11,7 +11,7 @@ import * as cashless from 'containers/App/cashless';
 import { useKeyFileStickyState, useInterval } from 'utils/stateUtils';
 import 'containers/App/app.css';
 
-const providerURL = "https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey;
+const providerURL = "https://"+process.env.CASHLESS_NETWORK+".infura.io/v3/"+process.env.INFURA_ID;
 
 const toEth = (num) => {
     return num/ethers.utils.parseEther("1");
@@ -170,7 +170,7 @@ export default function WalletPage(props) {
                 <p className="center marginRight">
                     <input type="text" className="textField" value={queryAmt} onChange={handleQueryAmt}/><button className="mini" onClick={handleTransact}>{!transactSwitch ? 'fund': 'withdraw'}</button>
                 </p>
-                <p className="center marginRight">{isTransacting ? <a className="oldLink" href={"https://"+cashless.network+".etherscan.io/tx/"+lastTxId}>view transaction</a>:<span>{errorMsg!="" ? <span>{errorMsg}</span>:<span>{!transactSwitch ? 'Fund Reserve with USDC':'Withdraw Reserve USDC'}</span>}</span>}</p>
+                <p className="center marginRight">{isTransacting ? <a className="oldLink" href={"https://"+process.env.CASHLESS_NETWORK+".etherscan.io/tx/"+lastTxId}>view transaction</a>:<span>{errorMsg!="" ? <span>{errorMsg}</span>:<span>{!transactSwitch ? 'Fund Reserve with USDC':'Withdraw Reserve USDC'}</span>}</span>}</p>
                 <p className="center marginRight"><button className="mini" onClick={handleSwitch}>{transactSwitch ? 'fund': 'withdraw'}</button></p>
             </div>
         </div>

@@ -6,6 +6,7 @@ const debug = require("debug")("express");
 const metrics = require("./metrics");
 const { ssbFolder } = require("./utils");
 const fetch = require("node-fetch").default;
+require("dotenv").config();
 
 let ssbClient;
 let syncing = false;

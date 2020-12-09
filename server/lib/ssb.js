@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { writeKey, ssbFolder } = require("./utils");
+require("dotenv").config();
 
 const envKey =
   process.env.SSB_KEY &&

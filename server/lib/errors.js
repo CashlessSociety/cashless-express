@@ -1,4 +1,5 @@
 const Sentry = require('@sentry/node');
+require("dotenv").config();
 
 let sentry;
 

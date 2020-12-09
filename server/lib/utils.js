@@ -5,6 +5,7 @@ const metrics = require("./metrics");
 const isMobile = require("ismobilejs").default;
 const sharp = require("sharp");
 const urlLib = require("url");
+require("dotenv").config();
 
 const isPhone = (req) => isMobile(req.headers["user-agent"]).phone;
 module.exports.isPhone = isPhone;

@@ -37,7 +37,6 @@ export default function App() {
         <Switch>
             <Route exact path="/" component={HomePage} />
             <Route exact path="/profile" component={ProfilePage} />
-            <Route exact path="/admin" component={AdminPage} />
             <Route exact path="/wallet" component={WalletPage} />
             <Route exact path="/explore" component={ExplorePage} />
             <Route path="/promise/:feedId/:claimName" component={TxDetailsPage} />

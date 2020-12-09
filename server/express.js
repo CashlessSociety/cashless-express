@@ -2,6 +2,10 @@
 
 const express = require('express');
 require('express-async-errors');
+require('dotenv').config();
+if (!process.env.FIREBASE_SECRET) {
+  throw Error(`Must set FIREBASE_SECRET as environment var (in .env file)`);
+}
 const logger = require('./logger');
 const argv = require('./argv');
 const port = require('./port');
@@ -20,13 +24,15 @@ const cookieEncrypter = require('cookie-encrypter');
 const fs = require('fs');
 const { sentry } = require('./lib/errors');
 const cors = require('cors');
-const { exec } = require('child_process');
 // raise errors like this - throw httpErrorInfo(status, message, properties)
 const httpErrorInfo = require('http-errors');
 const firebaseAdmin = require('./firebase');
 
 const network = process.env.CASHLESS_NETWORK || "rinkeby";
 const version = Number(process.env.CASHLESS_VERSION) || 1.0;
+const customHost = process.env.HOST;
+const host = customHost || null; // Let http.Server use its default IPv6/4 host
+const prettyHost = customHost || 'localhost';
 const ssbSecret = ssbKeys.loadOrCreateSync(`${ssbFolder()}/secret`);
 
 const ngrok =
@@ -41,20 +47,6 @@ const cookieOptions = {
   expires: new Date(253402300000000), // Friday, 31 Dec 9999 23:59:59 GMT, nice date from stackoverflow
   sameSite: 'Lax',
 };
-
-const keyshareDir = process.env.KEYSHARE_DIR || `${__dirname}/`;
-console.log('key and key commands dir:', keyshareDir);
-
-const sh = cmd =>
-  new Promise(function(resolve, reject) {
-    exec(cmd, (err, stdout, stderr) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({ stdout, stderr });
-      }
-    });
-  });
 
 if (sentry) {
   // Sentry request handler must be the first middleware on the app
@@ -156,59 +148,6 @@ app.post('/authenticatedEmail', async (req, res) => {
     }
     
     return res.json({status: 'ok', verifierId: ssb.client().id});
-})
-
-app.post('/uploadAdminKeyfile', (req, res) => {
-  // accessing the file
-  const myFile = req.files.file;
-  console.log('file retreived:', myFile.name, 'saving as:', req.body.filename);
-
-  //  mv() method places the file inside public directory
-  myFile.mv(keyshareDir + req.body.filename, err => {
-    if (err) {
-      console.log(err);
-      return res.json({ msg: 'Error occured' });
-    }
-
-    return res.json({ saved: req.body.filename, status: 'ok' });
-  });
-});
-
-app.post('/removeAdminKeyfile', (req, res) => {
-  fs.unlink(keyshareDir + req.body.filename, err => {
-    if (err) {
-      console.log(err);
-      return res.json({ msg: 'Error occured' });
-    }
-    console.log('removing file', req.body.filename);
-
-    return res.json({ deleted: req.body.filename, status: 'ok' });
-  });
-});
-
-app.post('/pollAdminKeyfiles', async (_req, res) => {
-  let nFound = 0;
-  const outObj = { '1': false, '2': false, '3': false, '4': false };
-  let cmd = `${keyshareDir}checkAddressFromShards.sh`;
-  for (let i = 0; i < 4; i++) {
-    const path = `${keyshareDir}${i + 1}.json`;
-    if (fs.existsSync(path)) {
-      outObj[(i + 1).toString()] = true;
-      nFound += 1;
-      cmd += ` ${path}`;
-    }
-  }
-  if (nFound > 2) {
-    try {
-      const { stdout } = await sh(cmd);
-      outObj.address = stdout.replace(/(\r\n|\n|\r)/gm, '');
-    } catch (_e) {
-      outObj.address = 'n/a';
-    }
-  } else {
-    outObj.address = 'n/a';
-  }
-  res.json(outObj);
 });
 
 // handle errors of type created by the 'httpErrorInfo' method
@@ -231,11 +170,6 @@ setup(app, {
   outputPath: resolve(process.cwd(), 'build'),
   publicPath: '/',
 });
-
-// get the intended host and port number, use localhost and port 3000 if not provided
-const customHost = argv.host || process.env.HOST;
-const host = customHost || null; // Let http.Server use its default IPv6/4 host
-const prettyHost = customHost || 'localhost';
 
 // use the gzipped bundle
 app.get('*.js', (req, res, next) => {
