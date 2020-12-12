@@ -77,7 +77,7 @@ export default function AuthJoinPage(props) {
           }
       }}`;
       try {
-          let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.APOLLO_PORT, {query:query}, {});
+          let r = await axios.post("/graphql", {query:query}, {});
           console.log(r.data, r.data.data);
           console.log(feedId);
           if (r.data.data.feed.id == feedId && r.data.data.feed.reserves.address == address) {
@@ -93,14 +93,14 @@ export default function AuthJoinPage(props) {
     const handleJoin = async (key, evidence, email, metamask) => {
       let idmsg = {feed: {id: key.feedKey.id}, name: {type:"RESERVES", address: key.address}, type: "cashless/identity", header: {version: process.env.CASHLESS_VERSION, network: process.env.CASHLESS_NETWORK}, evidence:null};
       try {
-          let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.PORT+"/publish", {content: idmsg, key:safeKey(key)}, {});
+          let r = await axios.post("/publish", {content: idmsg, key:safeKey(key)}, {});
           if (r.data.status=="ok") {
               let idmsg2 = {feed: {id: key.feedKey.id}, name: {type: "ACCOUNT", accountType:"GOOGLE", handle: email}, type: "cashless/identity", header: {version: process.env.CASHLESS_VERSION, network: process.env.CASHLESS_NETWORK}, evidence:evidence};
-              let r2 = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.PORT+"/publish", {content: idmsg2, key:safeKey(key)}, {});
+              let r2 = await axios.post("/publish", {content: idmsg2, key:safeKey(key)}, {});
               if (r2.data.status=="ok") {
                 if (user.displayName!=null && user.displayName!= "") {
                     let idmsg3 = {feed: {id: key.feedKey.id}, name: {type: "COMMON", name:user.displayName, id:uuid()}, type: "cashless/identity", header: {version: process.env.CASHLESS_VERSION, network: process.env.CASHLESS_NETWORK}, evidence:null};
-                    let r3 = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.PORT+"/publish", {content: idmsg3, key:safeKey(key)}, {});
+                    let r3 = await axios.post("/publish", {content: idmsg3, key:safeKey(key)}, {});
                 }
                 let ok = await hasFeed(key.feedKey.id, key.address);
                 if (ok) {
@@ -149,7 +149,7 @@ export default function AuthJoinPage(props) {
     const handleAuthJoin = async _evt => {
         if (user.emailVerified && user.email==email && idToken!="") {
             let key = await newKey(useMetamask);
-            let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.PORT+"/authenticatedEmail", {firebaseToken: idToken, ssbIdentity: key.feedKey.id}, {});
+            let r = await axios.post("/authenticatedEmail", {firebaseToken: idToken, ssbIdentity: key.feedKey.id}, {});
             if (r.data.status=="ok") {
                 const query = `
                     query { messages(feedId:"`+r.data.verifierId+`") {
@@ -169,7 +169,7 @@ export default function AuthJoinPage(props) {
                         }
                       }
                     }}`;
-                let r2 = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.APOLLO_PORT, {query:query}, {});
+                let r2 = await axios.post("/graphql", {query:query}, {});
                 let msgId;
                 let sequence;
                 if (r2.data.data.messages!=null && r2.data.data.messages.length>0) {
@@ -195,7 +195,7 @@ export default function AuthJoinPage(props) {
 
     const load = async () => {
         const q1 = `query { allFeedIds }`;
-        let r1 = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.APOLLO_PORT, {query:q1}, {});
+        let r1 = await axios.post("/graphql", {query:q1}, {});
         let feedIds = r1.data.data.allFeedIds;
         let claims = [];
         for (let j=0;j<feedIds.length; j++) {
@@ -213,7 +213,7 @@ export default function AuthJoinPage(props) {
                 }
                 amount
             }}`;
-            let r2 = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.APOLLO_PORT, {query:q2}, {});
+            let r2 = await axios.post("/graphql", {query:q2}, {});
             if (r2.data.data.pendingPromises != null && r2.data.data.pendingPromises.length>0) {
                 let promises = r2.data.data.pendingPromises;
                 for (let i=0; i<promises.length; i++) {

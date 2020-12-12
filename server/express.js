@@ -27,6 +27,14 @@ const cors = require('cors');
 // raise errors like this - throw httpErrorInfo(status, message, properties)
 const httpErrorInfo = require('http-errors');
 const firebaseAdmin = require('./firebase');
+const { ApolloServer } = require('apollo-server-express');
+const typeDefs = require('./schema');
+const resolvers = require('./resolvers');
+const ssbFlumeAPI = require('./datasource');
+
+const dataSources = () => ({
+    ssbFlumeAPI: new ssbFlumeAPI(),
+});
 
 const network = process.env.CASHLESS_NETWORK || "rinkeby";
 const version = Number(process.env.CASHLESS_VERSION) || 1.0;
@@ -48,10 +56,22 @@ const cookieOptions = {
   sameSite: 'Lax',
 };
 
+const apollo = new ApolloServer({
+  typeDefs,
+  resolvers,
+  dataSources,
+  inrospection: true,
+});
+
+apollo.applyMiddleware({ app });
+
+console.log(`Apollo endpoint deployed: ${apollo.graphqlPath}`);
+
 if (sentry) {
   // Sentry request handler must be the first middleware on the app
   app.use(sentry.Handlers.requestHandler());
 }
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(fileUpload());

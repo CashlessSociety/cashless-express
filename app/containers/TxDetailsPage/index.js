@@ -19,7 +19,7 @@ const getPromiseChain = async (feedId, claimName) => {
             nonce
         }}`;
     try {
-        let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.APOLLO_PORT , {query:query}, {});
+        let r = await axios.post("/graphql" , {query:query}, {});
         if (r.data.data.promiseChain != null) {
             let promises = r.data.data.promiseChain;
 
