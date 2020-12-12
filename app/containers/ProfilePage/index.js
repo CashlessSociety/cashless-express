@@ -290,7 +290,7 @@ export default function ProfilePage(props) {
   const handleSubmitName = async evt => {
     let idmsg = {feed: {id: key.feedKey.id}, name: {type:"COMMON", name: newName, id:uuid()}, type: "cashless/identity", header: {version: process.env.CASHLESS_VERSION, network: process.env.CASHLESS_NETWORK}, evidence:null};
     try {
-        let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+PORT+"/publish", {content: idmsg, key:safeKey(key)}, {});
+        let r = await axios.post("/publish", {content: idmsg, key:safeKey(key)}, {});
         if (r.data.status=="ok") {
             console.log('reset name!');
             setChangeName(false);
