@@ -93,14 +93,14 @@ export default function AuthJoinPage(props) {
     const handleJoin = async (key, evidence, email, metamask) => {
       let idmsg = {feed: {id: key.feedKey.id}, name: {type:"RESERVES", address: key.address}, type: "cashless/identity", header: {version: process.env.CASHLESS_VERSION, network: process.env.CASHLESS_NETWORK}, evidence:null};
       try {
-          let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.PORT+"/publish", {content: idmsg, key:safeKey(key)}, {});
+          let r = await axios.post("/publish", {content: idmsg, key:safeKey(key)}, {});
           if (r.data.status=="ok") {
               let idmsg2 = {feed: {id: key.feedKey.id}, name: {type: "ACCOUNT", accountType:"GOOGLE", handle: email}, type: "cashless/identity", header: {version: process.env.CASHLESS_VERSION, network: process.env.CASHLESS_NETWORK}, evidence:evidence};
-              let r2 = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.PORT+"/publish", {content: idmsg2, key:safeKey(key)}, {});
+              let r2 = await axios.post("/publish", {content: idmsg2, key:safeKey(key)}, {});
               if (r2.data.status=="ok") {
                 if (user.displayName!=null && user.displayName!= "") {
                     let idmsg3 = {feed: {id: key.feedKey.id}, name: {type: "COMMON", name:user.displayName, id:uuid()}, type: "cashless/identity", header: {version: process.env.CASHLESS_VERSION, network: process.env.CASHLESS_NETWORK}, evidence:null};
-                    let r3 = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.PORT+"/publish", {content: idmsg3, key:safeKey(key)}, {});
+                    let r3 = await axios.post("/publish", {content: idmsg3, key:safeKey(key)}, {});
                 }
                 let ok = await hasFeed(key.feedKey.id, key.address);
                 if (ok) {
@@ -149,7 +149,7 @@ export default function AuthJoinPage(props) {
     const handleAuthJoin = async _evt => {
         if (user.emailVerified && user.email==email && idToken!="") {
             let key = await newKey(useMetamask);
-            let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.PORT+"/authenticatedEmail", {firebaseToken: idToken, ssbIdentity: key.feedKey.id}, {});
+            let r = await axios.post("/authenticatedEmail", {firebaseToken: idToken, ssbIdentity: key.feedKey.id}, {});
             if (r.data.status=="ok") {
                 const query = `
                     query { messages(feedId:"`+r.data.verifierId+`") {

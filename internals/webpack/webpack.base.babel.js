@@ -126,6 +126,7 @@ module.exports = options => ({
       APOLLO_PORT: process.env.APOLLO_PORT || 4000,
       CASHLESS_NETWORK: process.env.CASHLESS_NETWORK || "rinkeby",
       CASHLESS_VERSION: process.env.CASHLESS_VERSION || 1.0,
+      CASHLESS_DOMAIN: process.env.CASHLESS_DOMAIN || "startup.cashless.social",
       HTTP_PROTOCOL: httpProtocol
     }),
   ]),

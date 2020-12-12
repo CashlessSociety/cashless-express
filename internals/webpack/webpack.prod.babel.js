@@ -23,7 +23,8 @@ module.exports = require('./webpack.base.babel')({
   },
 
   optimization: {
-    minimize: true,
+    // t2.micro doesnt have enough ram to do this 
+    minimize: false, 
     minimizer: [
       new TerserPlugin({
         terserOptions: {
@@ -38,7 +39,7 @@ module.exports = require('./webpack.base.babel')({
             ascii_only: true,
           },
         },
-        parallel: true,
+        parallel: false,
         cache: true,
         sourceMap: true,
       }),
