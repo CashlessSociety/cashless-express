@@ -27,7 +27,7 @@ const parsePromisesGross = (promises) => {
     return {gross: gross, grossPending: grossPending};
 }
 
-const providerURL = "https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey;
+const providerURL = "https://"+process.env.CASHLESS_NETWORK+".infura.io/v3/"+process.env.INFURA_ID;
 
 const getReservesAmount = async (address) => {
 	let contract = cashless.contract(providerURL, null);
@@ -91,7 +91,7 @@ export default function ProfilePage(props) {
         }
     }}`;
     try {
-        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.APOLLO_PORT, {query:query}, {});
         if (r.data.data.feed != null && r.data.data.feed.reserves != null) {
             setMyFeed(r.data.data.feed);
             let promises = [];
@@ -171,7 +171,7 @@ export default function ProfilePage(props) {
                     }
                 </p>
                 <p>
-                    <span className="bold under">Cash Reserves</span>: {'$'+myReservesAmt.toFixed(2)}
+                    <span className="bold under">Cash Reserves</span>: {'$'+myReservesAmt.toFixed(2)} {myFeed.reserves!=null ? "("+myFeed.reserves.address+")":""}
                 </p>
                 <p>
                     <span className="bold under">Incoming</span>: {renderAssets()}

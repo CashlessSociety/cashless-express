@@ -36,7 +36,7 @@ export default function HomePage(props) {
         let ethKey = cashless.bufferToHex(cashless.randomHash());
         address = cashless.addressFromPriv(ethKey);
         priv = ethKey;
-        signer = cashless.wallet("https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey, ethKey);
+        signer = cashless.wallet("https://"+process.env.CASHLESS_NETWORK+".infura.io/v3/"+process.env.INFURA_ID, ethKey);
     }
     if (signer == null || key == null || address == null) {
         console.log("error finding signer or key");
@@ -53,7 +53,7 @@ export default function HomePage(props) {
         }
     }}`;
     try {
-        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.APOLLO_PORT, {query:query}, {});
         if (r.data.data.feed.id == feedId && r.data.data.feed.reserves.address == address) {
             return true;
         }
@@ -78,9 +78,9 @@ export default function HomePage(props) {
 
   const handleJoin = async useMetamask => {
     let key = await newKey(useMetamask);
-    let idmsg = {feed: {id: key.feedKey.id}, name: {type:"RESERVES", address: key.address}, type: "cashless/identity", header: {version: cashless.version, network: cashless.network}, evidence:null};
+    let idmsg = {feed: {id: key.feedKey.id}, name: {type:"RESERVES", address: key.address}, type: "cashless/identity", header: {version: process.env.CASHLESS_VERSION, network: process.env.CASHLESS_NETWORK}, evidence:null};
     try {
-        let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg, key:safeKey(key)}, {});
+        let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.PORT+"/publish", {content: idmsg, key:safeKey(key)}, {});
         if (r.data.status=="ok") {
             console.log("published id msg!");
             let ok = await hasFeed(key.feedKey.id, key.address);
@@ -130,7 +130,7 @@ export default function HomePage(props) {
         priv = null;
       } else {
         address = cashless.addressFromPriv(keyfile.eth.private);
-        signer = cashless.wallet("https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey, keyfile.eth.private);
+        signer = cashless.wallet("https://"+process.env.CASHLESS_NETWORK+".infura.io/v3/"+process.env.INFURA_ID, keyfile.eth.private);
         priv = keyfile.eth.private;
       }
       if (address != keyfile.eth.address) {

@@ -28,20 +28,15 @@ const now = () => {
 
 const parsePromisesGross = (promises) => {
     let gross = 0;
-    let grossPending = 0;
     for (let i=0; i<promises.length; i++) {
-        if (promises[i].nonce > 0) {
-            gross += promises[i].amount;
-        } else if (promises[i].nonce==0) {
-            grossPending += promises[i].amount;
-        }
+        gross += promises[i].amount;
     }
 
-    return {gross: gross, grossPending: grossPending};
+    return gross;
 }
 
 const emptyHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
-const providerURL = "https://"+cashless.network+".infura.io/v3/"+cashless.infuraAPIKey;
+const providerURL = "https://"+process.env.CASHLESS_NETWORK+".infura.io/v3/"+process.env.INFURA_ID;
 
 const getReservesAmount = async (address) => {
 	let contract = cashless.contract(providerURL, null);
@@ -64,13 +59,20 @@ export default function ProfilePage(props) {
   const [queryEmail, setQueryEmail] = useState("@gmail.com");
   const [promiseAmount, setAmount] = useState("0.00");
   const [queryFeed, setQueryFeed] = useState(null);
-  const [publishResponse, setPublishResponse] = useState("Publish a PROMISE to your cashless feed (amount due in 60 days)");
+  const [publishResponse, setPublishResponse] = useState("Make a promise, due in 60 days");
 
   const [sendToEmail, setSendToEmail] = useState(false);
   const [changeName, setChangeName] = useState(false);
   const [newName, setNewName] = useState("");
 
+  const [memo, setMemo] = useState("");
+  const [rating, setRating] = useState("");
+
   const [isMetamask, setIsMetamask] = useState(false);
+  const [seeTransactions, setSeeTransactions] = useState(false);
+  const [showSend, setShowSend] = useState(false);
+  const [showCopyText, setShowCopyText] = useState(false);
+  const [copyText, setCopyText] = useState("");
 
   const getMyFeed = async (feedId) => {
     const query = `query { feed(id:"`+feedId+`") {
@@ -119,7 +121,7 @@ export default function ProfilePage(props) {
         }
     }}`;
     try {
-        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.APOLLO_PORT, {query:query}, {});
         if (r.data.data.feed != null && r.data.data.feed.reserves != null) {
             setMyFeed(r.data.data.feed);
             let promises = [];
@@ -157,7 +159,7 @@ export default function ProfilePage(props) {
 
   const getUpdateablePendingPromises = async (feedId) => {
     const q1 = `query { allFeedIds }`
-    let r1 = await axios.post('http://127.0.0.1:4000', {query:q1}, {});
+    let r1 = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.APOLLO_PORT, {query:q1}, {});
     let feedIds = r1.data.data.allFeedIds;
     const query = `query { pendingPromises(feedId:"`+feedId+`") {
         claimName
@@ -169,10 +171,12 @@ export default function ProfilePage(props) {
         }
         amount
         vestDate
+        memo
+        serviceRating
     }}`;
     let updateablePromises = [];
     try {
-        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.APOLLO_PORT, {query:query}, {});
         if (r.data.data.pendingPromises!=null && r.data.data.pendingPromises.length>0) {
             for (let j=0; j<feedIds.length; j++) {
                 const q2 = `query { feed(id:"`+feedIds[j]+`") {
@@ -189,7 +193,7 @@ export default function ProfilePage(props) {
                         accountType
                     }
                 }}`;
-                let r2 = await axios.post('http://127.0.0.1:4000', {query:q2}, {});
+                let r2 = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.APOLLO_PORT, {query:q2}, {});
                 if (r2.data.data.feed.verifiedAccounts != null && r2.data.data.feed.verifiedAccounts.length>0) {
                     for (let i=0; i<r.data.data.pendingPromises.length; i++) {
                         if (r.data.data.pendingPromises[i].recipient.verifiedAccounts[0].handle == r2.data.data.feed.verifiedAccounts[0].handle) {
@@ -256,7 +260,7 @@ export default function ProfilePage(props) {
           }
         }`;
       
-        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.APOLLO_PORT, {query:query}, {});
         if (r.data.data.feed.reserves.address != null) {
             setQueryFeed(r.data.data.feed);
         }
@@ -284,9 +288,9 @@ export default function ProfilePage(props) {
   }
 
   const handleSubmitName = async evt => {
-    let idmsg = {feed: {id: key.feedKey.id}, name: {type:"COMMON", name: newName, id:uuid()}, type: "cashless/identity", header: {version: cashless.version, network: cashless.network}, evidence:null};
+    let idmsg = {feed: {id: key.feedKey.id}, name: {type:"COMMON", name: newName, id:uuid()}, type: "cashless/identity", header: {version: process.env.CASHLESS_VERSION, network: process.env.CASHLESS_NETWORK}, evidence:null};
     try {
-        let r = await axios.post('http://127.0.0.1:3000/publish', {content: idmsg, key:safeKey(key)}, {});
+        let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+PORT+"/publish", {content: idmsg, key:safeKey(key)}, {});
         if (r.data.status=="ok") {
             console.log('reset name!');
             setChangeName(false);
@@ -310,7 +314,15 @@ export default function ProfilePage(props) {
         setPublishResponse("promised amount cannot be zero");
         return
     }
-    let promise = {type: "cashless/promise", header: {version: cashless.version, network: cashless.network}};
+    if (isNaN(Number(rating))) {
+        setPublishResponse("rating must be a number (1-5)");
+        return
+    }
+    if (Number(rating)>5 || Number(rating)<1) {
+        setPublishResponse("rating must be 1-5");
+        return
+    }
+    let promise = {type: "cashless/promise", header: {version: process.env.CASHLESS_VERSION, network: process.env.CASHLESS_NETWORK}};
     let claimName = cashless.bufferToHex(cashless.randomHash());
     let issueTime = now();
     // !!!
@@ -350,7 +362,7 @@ export default function ProfilePage(props) {
             return
         }
         promise.to = queryFeed;
-        promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: cashless.bufferToHex(claimSig.r), s: cashless.bufferToHex(claimSig.s)}, claimData:cashless.bufferToHex(claimData)};
+        promise.promise = {serviceRating: Number(rating), memo: memo, nonce:1, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: cashless.bufferToHex(claimSig.r), s: cashless.bufferToHex(claimSig.s)}, claimData:cashless.bufferToHex(claimData)};
     } else {
         //
         // Enforce GMAIL emails ONLY... but there are google accounts that dont end with @gmail.com
@@ -360,20 +372,23 @@ export default function ProfilePage(props) {
             return
         }*/
         promise.to = {verifiedAccounts: [{handle: queryEmail, accountType:"GOOGLE"}]};
-        promise.promise = {nonce:0, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime};
+        promise.promise = {serviceRating: Number(rating), memo:memo, nonce:0, claimName: claimName, denomination:"USD", amount: Number(promiseAmount), issueDate: issueTime, vestDate: vestTime};
     }
-    let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise, key:safeKey(key)}, {});
+    let res = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.PORT+'/publish', {content: promise, key:safeKey(key)}, {});
     if (res.data.status=="ok") {
-        if (!sendToEmail) {
-            setPublishResponse("published promise!");
-        } else {
-            setPublishResponse("published promise (to: '"+queryEmail+"')");
-        }
+        setMyFeed(null);
         setQueryId("@");
         setQueryFeed(null);
         setAmount("0.00");
         setQueryEmail("@gmail.com");
-        window.location.href = 'http://127.0.0.1:3000/profile';
+        setShowSend(false);
+        setSeeTransactions(false);
+        if (sendToEmail) {
+            setCopyText(memo+" claim $"+promiseAmount+" here: "+process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.PORT+"/join/auth/"+queryEmail);
+            setShowCopyText(true);
+        }
+        await getMyFeed(key.feedKey.id);
+        await getUpdateablePendingPromises(key.feedKey.id);
     }
   }
 
@@ -385,7 +400,7 @@ export default function ProfilePage(props) {
             break
         }
     }
-    let promise = {type: "cashless/promise", header: {version: cashless.version, network: cashless.network}};
+    let promise = {type: "cashless/promise", header: {version: process.env.CASHLESS_VERSION, network: process.env.CASHLESS_NETWORK}};
     let issueTime = now();
     let vestTime = pendingPromise.promise.vestDate;
     let voidTime = vestTime+(365*86400);
@@ -413,27 +428,62 @@ export default function ProfilePage(props) {
         return
     }
     promise.to = {id: pendingPromise.id, reserves: pendingPromise.reserves, commonName: pendingPromise.commonName, verifiedAccounts: pendingPromise.promise.recipient.verifiedAccounts};
-    promise.promise = {nonce:1, claimName: claimName, denomination:"USD", amount: Number(amount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: cashless.bufferToHex(claimSig.r), s: cashless.bufferToHex(claimSig.s)}, claimData:cashless.bufferToHex(claimData)};
-    let res = await axios.post('http://127.0.0.1:3000/publish', {content: promise, key:safeKey(key)}, {});
+    promise.promise = {memo: pendingPromise.promise.memo, serviceRating: pendingPromise.promise.serviceRating, nonce:1, claimName: claimName, denomination:"USD", amount: Number(amount), issueDate: issueTime, vestDate: vestTime, fromSignature:{v: claimSig.v, r: cashless.bufferToHex(claimSig.r), s: cashless.bufferToHex(claimSig.s)}, claimData:cashless.bufferToHex(claimData)};
+    let res = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.PORT+"/publish", {content: promise, key:safeKey(key)}, {});
     if (res.data.status=="ok") {
-        setPublishResponse("published promise!");
+        setMyFeed(null);
+        setSeeTransactions(false);
         await getMyFeed(key.feedKey.id);
         await getUpdateablePendingPromises(key.feedKey.id);
     }
   }
 
   const renderAssets = () => {
-      let promiseAmounts = parsePromisesGross(myFeed.assets);
+      let gross = parsePromisesGross(myFeed.assets);
       return (
-        <span><span className="green">${promiseAmounts.gross.toFixed(2)}</span> {promiseAmounts.grossPending>0 ? <span>{'(pending: '}<span className="yellow">${promiseAmounts.grossPending.toFixed(2)}</span>{')'}</span>:<span></span>}</span>
+        <span className="green">${gross.toFixed(2)}</span>
       );
   }
 
   const renderLiabilities = () => {
-    let promiseAmounts = parsePromisesGross(myFeed.liabilities);
+    let gross = parsePromisesGross(myFeed.liabilities);
     return (
-      <span><span className="red">${promiseAmounts.gross.toFixed(2)}</span> {promiseAmounts.grossPending>0 ? <span>{'(pending: '}<span className="yellow">${promiseAmounts.grossPending.toFixed(2)}</span>{')'}</span>:<span></span>}</span>
+      <span className="red">${gross.toFixed(2)}</span>
     );
+  }
+
+  const handleSeeTransactions = _evt => {
+      setSeeTransactions(true);
+  }
+
+  const handleHideTransactions = _evt => {
+      setSeeTransactions(false);
+  }
+
+  const handleShowSend = _evt => {
+      setShowSend(true);
+  }
+
+  const handleChangeCopyText = evt => {
+      setCopyText(evt.target.value);
+  }
+
+  const handleCopyText = _evt => {
+    let text = document.getElementById("copyThis");
+    text.select();
+    document.execCommand("copy");
+  }
+
+  const handleHideCopy = _evt => {
+    setShowCopyText(false);
+  }
+
+  const handleRating = evt => {
+      setRating(evt.target.value);
+  }
+
+  const handleMemo = evt => {
+      setMemo(evt.target.value);
   }
 
   useEffect(() => {
@@ -446,10 +496,11 @@ export default function ProfilePage(props) {
         <title>Home Page</title>
         <meta name="description" content="My homepage" />
       </Helmet>
-        {loaded ?
+        {loaded && myFeed!=null ?
         <div className="outerDiv column">
             <div>
-                <h1>Your Portfolio:</h1>
+                <br></br>
+                <br></br>
                 {changeName==false ?
                 <p>
                     {myFeed.commonName==null ? <span>(unknown)</span>:<span>{myFeed.commonName.name}</span>}&nbsp;<button className="mini" onClick={handleChangeName}>change name</button>
@@ -468,18 +519,24 @@ export default function ProfilePage(props) {
                     }
                 </p>
                 <p>
-                    <span className="bold under">Cash Reserves</span>: {'$'+myReservesAmt.toFixed(2)}
+                    <span className="bold">Cash Reserves</span>: {'$'+myReservesAmt.toFixed(2)}
                 </p>
                 <p>
-                    <span className="bold under">Incoming</span>: {renderAssets()}
+                    <span className="bold">Incoming</span>: {renderAssets()}
                 </p>
                 <p>
-                    <span className="bold under">Outgoing</span>: {renderLiabilities()}
+                    <span className="bold">Outgoing</span>: {renderLiabilities()}
                 </p>
+            </div>
+            {!seeTransactions ?
+                <p><button className="mini" onClick={handleSeeTransactions}>transactions</button></p>
+                :
+                <span><p><button className="mini" onClick={handleHideTransactions}>hide transactions</button></p>
+                <span>
                 {myPromises.map(({ claimName, nonce, author }) => {
                     return <TransactionBlob claimName={claimName} nonce={nonce} feedId={author.id} isStub={true} />;
-                })}
-            </div>
+                })}</span></span>
+            }
             <div>
                 <ul>
                     {promisesToCommit.map(({id, promise}) => {
@@ -487,11 +544,12 @@ export default function ProfilePage(props) {
                     })}
                 </ul>
             </div>
+            {showSend ?
             <div className="borderedDiv">
                 <p>
                     {sendToEmail==false ?
                     <span>
-                        <span className="bold under">ID</span>:&nbsp;
+                        <span className="bold">ID</span>:&nbsp;
                         {queryFeed==null  ?
                             <span><input type="text" className="textField" value={queryId} onChange={handleQueryId}/> <button className="mini" onClick={handleSendToEmail}>send to email</button></span>
                             :
@@ -500,19 +558,43 @@ export default function ProfilePage(props) {
                     </span>
                     :
                     <span>
-                        <span className="bold under">Email</span>:&nbsp;
+                        <span className="bold">Email</span>:&nbsp;
                         <input type="text" className="textField" value={queryEmail} onChange={handleQueryEmail}/> <button className="mini" onClick={handleSendToId}>send to id</button>
                     </span>
                     }   
                 </p>
                 <p>
-                    <span className="bold under">Amount</span>:&nbsp;<input type="text" className="textField" value={promiseAmount} onChange={handleAmount}/>
+                    <span className="bold">Amount</span>:&nbsp;<input type="text" className="textField" value={promiseAmount} onChange={handleAmount}/>
+                </p>
+                <p>
+                    <span className="bold">Note</span>:&nbsp;<input type="text" className="textField" value={memo} onChange={handleMemo}/>
+                </p>
+                <p>
+                    <span className="bold">Quality Rating</span> (1-5):&nbsp;<input type="text" className="textField" value={rating} onChange={handleRating}/>
                 </p>
                 <button className="blackButton" onClick={handlePublish}>
-                    publish
+                    send
                 </button>
                 <p><span className="bold italic">{publishResponse}</span></p>
             </div>
+            :
+            <div>
+                <button className="blackButton" onClick={handleShowSend}>
+                    make a promise
+                </button>
+            </div>
+            }
+            {showCopyText ?
+            <div>
+                <p>
+                    <textarea id="copyThis" value={copyText} onChange={handleChangeCopyText} rows="2" cols="60"/>
+                    <br></br>
+                    <button className="mini" onClick={handleCopyText}>copy to clipboard</button> <button className="mini" onClick={handleHideCopy}>done</button>
+                </p>
+            </div>
+            :
+            <div></div>
+            }
         </div>
         :
         <div className="outerDiv center">loading...</div>

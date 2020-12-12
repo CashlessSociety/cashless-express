@@ -8,7 +8,6 @@
  */
 
 import produce from 'immer';
-import { LOAD_REPOS_SUCCESS, LOAD_REPOS, LOAD_REPOS_ERROR } from './constants';
 
 // The initial state of the App
 export const initialState = {
@@ -24,19 +23,19 @@ export const initialState = {
 const appReducer = (state = initialState, action) =>
   produce(state, draft => {
     switch (action.type) {
-      case LOAD_REPOS:
+      case 10:
         draft.loading = true;
         draft.error = false;
         draft.userData.repositories = false;
         break;
 
-      case LOAD_REPOS_SUCCESS:
+      case 11:
         draft.userData.repositories = action.repos;
         draft.loading = false;
         draft.currentUser = action.username;
         break;
 
-      case LOAD_REPOS_ERROR:
+      case 12:
         draft.error = action.error;
         draft.loading = false;
         break;

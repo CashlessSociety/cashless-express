@@ -21,7 +21,7 @@ const getTransactions = async () => {
             }
         }}`;
     try {
-        let r = await axios.post('http://127.0.0.1:4000', {query:query}, {});
+        let r = await axios.post(process.env.HTTP_PROTOCOL+process.env.HOST+":"+process.env.APOLLO_PORT, {query:query}, {});
         if (r.data.data.allPromises != null) {
             let promises = [];
             for (let i=0; i<r.data.data.allPromises.length; i++) {

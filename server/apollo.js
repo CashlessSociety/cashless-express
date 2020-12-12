@@ -2,6 +2,7 @@ const { ApolloServer } = require('apollo-server');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
 const ssbFlumeAPI = require('./datasource');
+require("dotenv").config();
 
 const dataSources = () => ({
     ssbFlumeAPI: new ssbFlumeAPI(),

@@ -1,5 +1,5 @@
 require("./lib/errors");
-
+require("dotenv").config();
 require("./lib/ssb");
 require("./apollo");
 

@@ -10,7 +10,6 @@ import React from 'react';
 import { Helmet } from 'react-helmet';
 import { Switch, Route } from 'react-router-dom';
 
-import AdminPage from 'containers/AdminPage/Loadable';
 import NotFoundPage from 'containers/NotFoundPage/Loadable';
 import HomePage from 'containers/HomePage/Loadable';
 import ProfilePage from 'containers/ProfilePage/Loadable';
@@ -37,7 +36,6 @@ export default function App() {
         <Switch>
             <Route exact path="/" component={HomePage} />
             <Route exact path="/profile" component={ProfilePage} />
-            <Route exact path="/admin" component={AdminPage} />
             <Route exact path="/wallet" component={WalletPage} />
             <Route exact path="/explore" component={ExplorePage} />
             <Route path="/promise/:feedId/:claimName" component={TxDetailsPage} />

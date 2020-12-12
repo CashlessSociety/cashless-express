@@ -1,4 +1,5 @@
 const configInject = require("ssb-config/inject");
+require("dotenv").config();
 
 module.exports = configInject(process.env.CONFIG_FOLDER || "ssb", {
   onError: (err) => {

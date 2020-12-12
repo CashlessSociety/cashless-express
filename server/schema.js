@@ -68,6 +68,7 @@ const typeDefs = gql`
         vestDate: Date
         denomination: Denomination
         memo: String
+        serviceRating: Float
         tags: [String]
         nonce: Int
         claimName: ID

@@ -57,6 +57,7 @@ class ssbFlumeAPI extends DataSource {
         amount: promise.value.content.promise.amount,
         denomination: promise.value.content.promise.denomination,
         memo: promise.value.content.promise.memo,
+        serviceRating: promise.value.content.promise.serviceRating,
         tags: promise.value.content.promise.tags,
         author: {type: "FEED", id: promise.value.author, commonName: promise.value.content.from.commonName, reserves: promise.value.content.from.reserves},
         recipient: promise.value.content.to,
