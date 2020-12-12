@@ -121,12 +121,8 @@ module.exports = options => ({
     new webpack.EnvironmentPlugin({
       NODE_ENV: 'development',
       INFURA_ID: process.env.INFURA_ID || "fef5fecf13fb489387683541edfbd958",
-      HOST: process.env.HOST || "127.0.0.1",
-      PORT: process.env.PORT || 3000,
-      APOLLO_PORT: process.env.APOLLO_PORT || 4000,
       CASHLESS_NETWORK: process.env.CASHLESS_NETWORK || "rinkeby",
       CASHLESS_VERSION: process.env.CASHLESS_VERSION || 1.0,
-      HTTP_PROTOCOL: httpProtocol
     }),
   ]),
   resolve: {
