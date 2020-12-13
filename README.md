@@ -20,8 +20,6 @@ HOST (endpoint of server)
 
 PORT (port for serving react)
 
-APOLLO_PORT (port for serving graphQL)
-
 HTTPS (if set, will try to run ssl but will need proper certs)
 
 ## License
